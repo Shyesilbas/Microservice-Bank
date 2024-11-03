@@ -49,4 +49,13 @@ public class AccountController {
         String response = accountService.deleteAccount(id);
         return ResponseEntity.ok(response);
     }
+
+    @Operation(summary = "Account(s) For specific Customer")
+    @ApiResponse(responseCode = "200",description = "Account For the Customer Id's")
+    @GetMapping("/byCustomer/{customerId}")
+    public ResponseEntity<List<AccountResponse>> getAccountsByCustomerId(@PathVariable Integer customerId) {
+        return ResponseEntity.ok(accountService.findAccountByCustomerId(customerId));
+    }
+
+
 }

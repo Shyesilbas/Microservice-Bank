@@ -72,6 +72,7 @@ public class AccountService {
                 .toList();
     }
 
+    // For the AccountId
     public AccountResponse findById(Integer id) {
         Account account = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Account not found"));
@@ -87,8 +88,33 @@ public class AccountService {
         );
     }
 
+    // For the CustomerId
+    public List<AccountResponse> findAccountByCustomerId(Integer customerId) {
+        List<Account> accounts = repository.findByCustomerId(customerId);
+        if (accounts.isEmpty()) {
+            throw new RuntimeException("No accounts found for customer ID: " + customerId);
+        }
+        return accounts.stream()
+                .map(account -> {
+                    CustomerResponse customer = customerClient.findCustomerById(account.getCustomerId());
+                    return new AccountResponse(
+                            account.getId(),
+                            account.getAccountNumber(),
+                            account.getAccountName(),
+                            account.getCurrency(),
+                            account.getAccountType(),
+                            account.getBalance(),
+                            customer
+                    );
+                })
+                .toList();
+    }
+
+
     public String deleteAccount(Integer id) {
         repository.deleteById(id);
         return "Account deleted successfully";
     }
+
+
 }

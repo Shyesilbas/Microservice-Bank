@@ -10,7 +10,5 @@ public record CustomerResponse(
         String email,
         String personalId
 
-
-
 ) {
 }
