@@ -15,13 +15,10 @@ public interface CustomerClient {
     Logger log = LoggerFactory.getLogger(CustomerClient.class);
 
     @GetMapping("/{customerId}")
-    @CircuitBreaker(name = "customerServiceCircuitBreaker",fallbackMethod = "fallBackFindCustomerById")
+    @CircuitBreaker(name = "customerServiceCircuitBreaker")
     CustomerResponse findCustomerById(@PathVariable Integer customerId);
 
-    default CustomerResponse fallbackFindCustomerById(Integer customerId, Throwable throwable) {
-        log.info("Customer id {} does not exists , error {}",customerId,throwable.getMessage());
-        return new CustomerResponse(customerId,null,null,null,null);
-    }
+
 
 
 }

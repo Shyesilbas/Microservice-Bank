@@ -7,18 +7,24 @@ import com.serhat.bank.dto.AccountResponse;
 import com.serhat.bank.model.Account;
 import com.serhat.bank.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Random;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class AccountService {
 
     private final AccountRepository repository;
     private final CustomerClient customerClient;
 
     public String createAccount(AccountRequest request) {
+
+        String uniqueAccountNumber = generateUniqueAccountNumber();
 
         CustomerResponse customer = customerClient.findCustomerById(request.customerId());
         if (customer == null) {
@@ -27,6 +33,7 @@ public class AccountService {
 
         Account account = Account.builder()
                 .accountName(request.accountName())
+                .accountNumber(Integer.valueOf(uniqueAccountNumber))
                 .currency(request.currency())
                 .accountType(request.accountType())
                 .balance(request.balance())
@@ -34,8 +41,18 @@ public class AccountService {
                 .build();
 
         Account savedAccount = repository.save(account);
-        return "Account created successfully with ID: " + savedAccount.getId() + " Customer Personal Id : "+customer.personalId();
+        log.info("Account created successfully");
+        return "Account created successfully with ID: " + savedAccount.getId() +" Account Number : "+uniqueAccountNumber+ " Customer Personal Id : "+customer.personalId();
     }
+
+    private String generateUniqueAccountNumber() {
+        String accountNumber;
+        do {
+            accountNumber = String.valueOf((long) (Math.random() * 1_000_000L));
+        } while (repository.existsByAccountNumber(Integer.valueOf(accountNumber)));
+        return accountNumber;
+    }
+
 
     public List<AccountResponse> findAllAccounts() {
         return repository.findAll()
@@ -44,6 +61,7 @@ public class AccountService {
                     CustomerResponse customer = customerClient.findCustomerById(account.getCustomerId());
                     return new AccountResponse(
                             account.getId(),
+                            account.getAccountNumber(),
                             account.getAccountName(),
                             account.getCurrency(),
                             account.getAccountType(),
@@ -60,6 +78,7 @@ public class AccountService {
         CustomerResponse customer = customerClient.findCustomerById(account.getCustomerId());
         return new AccountResponse(
                 account.getId(),
+                account.getAccountNumber(),
                 account.getAccountName(),
                 account.getCurrency(),
                 account.getAccountType(),

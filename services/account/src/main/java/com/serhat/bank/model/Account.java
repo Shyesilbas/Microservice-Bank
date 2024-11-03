@@ -27,6 +27,7 @@ public class Account {
     private BigDecimal balance;
     @Column(name = "customer_id")
     private Integer customerId;
+    private int accountNumber;
 
 
 }
