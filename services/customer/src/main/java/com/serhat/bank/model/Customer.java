@@ -7,6 +7,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 @Entity
@@ -32,6 +33,7 @@ public class Customer {
     private BigDecimal monthlyIncome;
     @Enumerated(EnumType.STRING)
     private Occupation occupation;
+
 
 
 }

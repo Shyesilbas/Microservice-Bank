@@ -55,6 +55,12 @@ public class CustomerService {
         return this.repository.existsById(id);
     }
 
+    public CustomerResponse findByCustomerId(Integer customerId) {
+        Customer customer = repository.findById(customerId)
+                .orElseThrow(() -> new RuntimeException("Customer Not found"));
+        return mapper.customerData(customer);
+    }
+
     public String deleteCustomer(Integer id){
         if(checkIdExists(id)) {
             this.repository.deleteById(id);
