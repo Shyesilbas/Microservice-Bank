@@ -5,6 +5,7 @@ import com.serhat.bank.dto.CustomerResponse;
 import com.serhat.bank.service.CustomerService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -23,7 +24,7 @@ public class CustomerController {
     @Operation(summary = "Create a new Customer")
     @ApiResponse(responseCode = "200",description = "Customer Created Successfully")
     @PostMapping("/saveCustomer")
-    public ResponseEntity<String> createCustomer(@RequestBody CustomerRequest request){
+    public ResponseEntity<String> createCustomer(@RequestBody @Valid CustomerRequest request){
         return ResponseEntity.ok(service.createCustomer(request));
     }
 
