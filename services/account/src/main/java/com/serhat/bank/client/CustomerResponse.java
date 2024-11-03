@@ -1,7 +1,10 @@
 package com.serhat.bank.client;
 
+import lombok.NoArgsConstructor;
+
+
 public record CustomerResponse(
-        String id,
+        Integer id,
         String name,
         String surname,
         String email,
