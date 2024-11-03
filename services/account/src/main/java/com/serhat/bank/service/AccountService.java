@@ -21,54 +21,27 @@ public class AccountService {
 
     private final AccountRepository repository;
     private final CustomerClient customerClient;
+    private final AccountMapper mapper;
 
     public String createAccount(AccountRequest request) {
-
-        String uniqueAccountNumber = generateUniqueAccountNumber();
 
         CustomerResponse customer = customerClient.findCustomerById(request.customerId());
         if (customer == null) {
             throw new RuntimeException("Customer not found for ID: " + request.customerId());
         }
 
-        Account account = Account.builder()
-                .accountName(request.accountName())
-                .accountNumber(Integer.valueOf(uniqueAccountNumber))
-                .currency(request.currency())
-                .accountType(request.accountType())
-                .balance(request.balance())
-                .customerId(request.customerId())
-                .build();
-
+        Account account = mapper.mapToAccount(request);
         Account savedAccount = repository.save(account);
-        log.info("Account created successfully");
-        return "Account created successfully with ID: " + savedAccount.getId() +" Account Number : "+uniqueAccountNumber+ " Customer Personal Id : "+customer.personalId();
-    }
 
-    private String generateUniqueAccountNumber() {
-        String accountNumber;
-        do {
-            accountNumber = String.valueOf((long) (Math.random() * 1_000_000L));
-        } while (repository.existsByAccountNumber(Integer.valueOf(accountNumber)));
-        return accountNumber;
+        log.info("Account created successfully");
+        return "Account created successfully with ID: " + savedAccount.getId() +" Account Number : "+savedAccount.getAccountNumber()+ " Customer Personal Id : "+customer.personalId();
     }
 
 
     public List<AccountResponse> findAllAccounts() {
         return repository.findAll()
                 .stream()
-                .map(account -> {
-                    CustomerResponse customer = customerClient.findCustomerById(account.getCustomerId());
-                    return new AccountResponse(
-                            account.getId(),
-                            account.getAccountNumber(),
-                            account.getAccountName(),
-                            account.getCurrency(),
-                            account.getAccountType(),
-                            account.getBalance(),
-                            customer
-                    );
-                })
+                .map(mapper::accountData)
                 .toList();
     }
 
@@ -76,16 +49,7 @@ public class AccountService {
     public AccountResponse findById(Integer id) {
         Account account = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Account not found"));
-        CustomerResponse customer = customerClient.findCustomerById(account.getCustomerId());
-        return new AccountResponse(
-                account.getId(),
-                account.getAccountNumber(),
-                account.getAccountName(),
-                account.getCurrency(),
-                account.getAccountType(),
-                account.getBalance(),
-                customer
-        );
+      return mapper.accountData(account);
     }
 
     // For the CustomerId
@@ -95,21 +59,9 @@ public class AccountService {
             throw new RuntimeException("No accounts found for customer ID: " + customerId);
         }
         return accounts.stream()
-                .map(account -> {
-                    CustomerResponse customer = customerClient.findCustomerById(account.getCustomerId());
-                    return new AccountResponse(
-                            account.getId(),
-                            account.getAccountNumber(),
-                            account.getAccountName(),
-                            account.getCurrency(),
-                            account.getAccountType(),
-                            account.getBalance(),
-                            customer
-                    );
-                })
+                .map(mapper::accountData)
                 .toList();
     }
-
 
     public String deleteAccount(Integer id) {
         repository.deleteById(id);
