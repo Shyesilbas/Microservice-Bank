@@ -4,10 +4,13 @@ import com.serhat.bank.client.CustomerClient;
 import com.serhat.bank.client.CustomerResponse;
 import com.serhat.bank.dto.AccountRequest;
 import com.serhat.bank.dto.AccountResponse;
+import com.serhat.bank.kafka.AccountCreatedEvent;
+import com.serhat.bank.kafka.Status;
 import com.serhat.bank.model.Account;
 import com.serhat.bank.repository.AccountRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -22,7 +25,7 @@ public class AccountService {
     private final AccountRepository repository;
     private final CustomerClient customerClient;
     private final AccountMapper mapper;
-
+    private final KafkaTemplate<String,AccountCreatedEvent> kafkaTemplate;
     public String createAccount(AccountRequest request) {
 
         CustomerResponse customer = customerClient.findCustomerById(request.customerId());
@@ -32,8 +35,12 @@ public class AccountService {
 
         Account account = mapper.mapToAccount(request);
         Account savedAccount = repository.save(account);
+        AccountCreatedEvent accountCreatedEvent = new AccountCreatedEvent(account.getAccountNumber(), Status.CREATED);
 
         log.info("Account created successfully");
+        log.info("Kafka Topic sending for The Account Creation -- Started");
+        kafkaTemplate.send("Account-created",accountCreatedEvent);
+        log.info("Kafka Topic sending for The Account Creation -- End");
         return "Account created successfully with ID: " + savedAccount.getId() +" Account Number : "+savedAccount.getAccountNumber()+ " Customer Personal Id : "+customer.personalId();
     }
 

@@ -42,3 +42,8 @@ resilience4j:
         permittedNumberOfCallsInHalfOpenState: 3  # Yarı açık durumda 3 çağrıya izin ver
         minimumNumberOfCalls: 5         # Hata oranı hesaplamak için en az 5 çağrı yapılmalı
 
+  kafka:
+    bootstrap-servers: localhost:9092
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
