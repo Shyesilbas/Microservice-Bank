@@ -6,10 +6,12 @@ import java.math.BigDecimal;
 
 public record WithdrawResponse(
         String senderAccountNumber,
-        String receiverAccountNumber,
+
         BigDecimal amount,
         String description,
-        CustomerResponse customer
+        String customerName,
+        String customerSurname,
+        BigDecimal newBalance
 
 
 ) {

@@ -8,6 +8,7 @@ public record DepositResponse(
         String receiverAccountNumber,
         String description,
         BigDecimal amount,
-        CustomerResponse customer
+        Integer customerId,
+        BigDecimal updatedBalance
 ) {
 }

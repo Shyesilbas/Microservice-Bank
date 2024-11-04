@@ -64,7 +64,7 @@ public class TransactionService {
         kafkaTemplateForDeposit.send("Deposit-transaction",depositEvent);
        log.info("Kafka topic Sent successfully to topic Deposit-transaction");
        return new DepositResponse(
-               request.accountNumber(), request.description(), request.amount(),customer
+               request.accountNumber(), request.description(), request.amount(),customer.id(),updatedBalance
        );
     }
 
@@ -106,7 +106,7 @@ public class TransactionService {
         kafkaTemplateForWithdrawal.send("Withdrawal-transaction",withdrawalEvent);
         log.info("Kafka topic Sent successfully to topic Withdrawal-transaction");
         return new WithdrawResponse(
-                request.senderAccountNumber(), request.receiverAccountNumber(), request.amount(), request.description(), receiverCustomer
+                request.receiverAccountNumber(), request.amount(), request.description(), receiverCustomer.name(), receiverCustomer.surname(),updatedBalance
         );
     }
 

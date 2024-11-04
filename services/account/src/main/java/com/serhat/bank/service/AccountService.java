@@ -26,7 +26,6 @@ public class AccountService {
 
     private final AccountRepository repository;
     private final CustomerClient customerClient;
-    private final TransactionClient transactionClient;
     private final AccountMapper mapper;
     private final KafkaTemplate<String, AccountCreatedEvent> kafkaTemplate;
 
@@ -61,15 +60,6 @@ public class AccountService {
         Account account = repository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Account not found"));
         return mapper.accountData(account);
-    }
-
-    public AccountResponse updateAccountBalance(int accountNumber, BigDecimal newBalance) {
-        Account account = repository.findByAccountNumber(accountNumber)
-                .orElseThrow(() -> new RuntimeException("Account not found for account number: " + accountNumber));
-
-        account.setBalance(newBalance);
-        Account updatedAccount = repository.save(account);
-        return mapper.accountData(updatedAccount);
     }
 
     public DepositResponse updateBalanceAfterDeposit(DepositRequest request) throws AccountNotFoundException {

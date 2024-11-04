@@ -71,7 +71,6 @@ public class AccountController {
         AccountResponse account = accountService.findById(id);
         return ResponseEntity.ok(account);
     }
-
     @Operation(summary = "Delete an Account")
     @ApiResponse(responseCode = "200", description = "Account Deleted Successfully")
     @DeleteMapping("/{id}")
