@@ -13,7 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Configuration
-public class KafkaConfigs {
+public class KafkaConfigsForDeposit {
 
     @Bean
     public ProducerFactory<String, DepositEvent> producerFactory(){
@@ -28,4 +28,20 @@ public class KafkaConfigs {
     public KafkaTemplate<String , DepositEvent> kafkaTemplate(){
         return new KafkaTemplate<>(producerFactory());
     }
+
+    @Bean
+    public ProducerFactory<String, WithdrawalEvent> producerFactoryForWithdrawal(){
+        Map<String, Object> configPropsForWithdrawal = new HashMap<>();
+        configPropsForWithdrawal.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "localhost:9092");
+        configPropsForWithdrawal.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        configPropsForWithdrawal.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+        return new DefaultKafkaProducerFactory<>(configPropsForWithdrawal);
+    }
+
+    @Bean
+    public KafkaTemplate<String , WithdrawalEvent> kafkaTemplateForWithdrawal(){
+        return new KafkaTemplate<>(producerFactoryForWithdrawal());
+    }
+
+
 }

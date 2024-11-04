@@ -13,4 +13,6 @@ public record AccountResponse(
 
 
 ) {
+    public void setBalance(BigDecimal add) {
+    }
 }

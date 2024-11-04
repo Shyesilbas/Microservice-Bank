@@ -6,11 +6,17 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.TopicBuilder;
 
 @Configuration
-public class KafkaTopicConfig {
+public class KafkaTopicDeposit {
 
     @Bean
     public NewTopic newTopic(){
         return TopicBuilder.name("Deposit-transaction")
+                .build();
+    }
+    @Bean
+    public NewTopic topic(){
+        return TopicBuilder
+                .name("Withdrawal-topic")
                 .build();
     }
 
