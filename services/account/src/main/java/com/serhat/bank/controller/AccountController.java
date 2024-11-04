@@ -26,6 +26,11 @@ public class AccountController {
         return ResponseEntity.ok(response);
     }
 
+    @GetMapping("/byAccountNumber/{accountNumber}")
+    public ResponseEntity<AccountResponse> findByAccountNumber(@PathVariable int accountNumber){
+        return ResponseEntity.ok(accountService.findByAccountNumber(accountNumber));
+    }
+
     @Operation(summary = "Fetch All Accounts")
     @ApiResponse(responseCode = "200", description = "Accounts Fetched Successfully")
     @GetMapping

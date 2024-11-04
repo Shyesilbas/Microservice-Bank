@@ -14,6 +14,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.UUID;
 
@@ -76,4 +77,11 @@ public class AccountService {
     }
 
 
+    public AccountResponse findByAccountNumber(int accountNumber) {
+        Optional<Account> account = repository.findByAccountNumber(accountNumber);
+        if (account.isEmpty()){
+            throw new RuntimeException("Account Not found");
+        }
+        return mapper.accountData(account.get());
+    }
 }
