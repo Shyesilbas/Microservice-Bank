@@ -1,5 +1,8 @@
 package com.serhat.bank.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
+@JsonFormat(shape = JsonFormat.Shape.STRING)
 public enum Occupation {
     DOCTOR,
     ENGINEER,

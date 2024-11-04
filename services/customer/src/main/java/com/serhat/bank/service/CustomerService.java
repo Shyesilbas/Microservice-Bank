@@ -4,19 +4,25 @@ package com.serhat.bank.service;
 
 import com.serhat.bank.dto.CustomerRequest;
 import com.serhat.bank.dto.CustomerResponse;
+import com.serhat.bank.kafka.CustomerCreatedEvent;
+import com.serhat.bank.kafka.Status;
 import com.serhat.bank.model.Customer;
 import com.serhat.bank.repository.CustomerRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CustomerService {
 
     private final CustomerRepository repository;
     private final CustomerMapper mapper;
+    private final KafkaTemplate<String, CustomerCreatedEvent> kafkaTemplate;
 
     public String createCustomer(CustomerRequest request){
         if (checkEmailExists(request.email())) {
@@ -34,6 +40,11 @@ public class CustomerService {
 
      Customer customer = mapper.mapToCustomer(request);
      Customer savedCustomer = repository.save(customer);
+     CustomerCreatedEvent customerCreatedEvent = new CustomerCreatedEvent(request.personalId(), Status.CREATED);
+     log.info("Kafka Message Start");
+     kafkaTemplate.send("Customer-created",customerCreatedEvent);
+     log.info("Kafka Message End");
+
 
      return "Customer created Successfully! Name : "+request.name()+" Personal Id : "+request.personalId() + " Customer Id : "+savedCustomer.getId();
     }
