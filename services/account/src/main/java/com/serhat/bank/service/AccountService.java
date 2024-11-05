@@ -40,6 +40,7 @@ public class AccountService {
         Account account = mapper.mapToAccount(request);
         Account savedAccount = repository.save(account);
         AccountCreatedEvent accountCreatedEvent = new AccountCreatedEvent(account.getAccountNumber(), Status.CREATED);
+        customerClient.updateRelatedAccount(String.valueOf(request.customerId()), account.getId());
 
         log.info("Account created successfully");
         log.info("Kafka Topic sending for The Account Creation -- Started");
@@ -101,6 +102,16 @@ public class AccountService {
 
         CustomerResponse customer = customerClient.findCustomerById(Integer.valueOf(request.receiverCustomerId()));
         return new WithdrawResponse(account.getAccountNumber(), request.amount(), request.description(), customer);
+    }
+
+    public void updateLinkedCreditCards(Integer accountId) {
+
+        Account account = repository.findById(accountId)
+                .orElseThrow(() -> new RuntimeException("Account not found"));
+
+
+        account.setRelatedCreditCard(account.getRelatedCreditCard() + 1);
+        repository.save(account);
     }
 
 

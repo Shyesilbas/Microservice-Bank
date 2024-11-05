@@ -33,6 +33,10 @@ public class Customer {
     private BigDecimal monthlyIncome;
     @Enumerated(EnumType.STRING)
     private Occupation occupation;
+    @Column(name = "related_credit_card")
+    private Integer relatedCreditCard = 0;
+    @Column(name = "related_account")
+    private Integer relatedAccount;
 
 
 

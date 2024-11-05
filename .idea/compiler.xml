@@ -12,6 +12,7 @@
         <module name="discovery" />
         <module name="account" />
         <module name="customer" />
+        <module name="credit-card" />
       </profile>
     </annotationProcessing>
   </component>
@@ -19,6 +20,7 @@
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="account" options="-parameters" />
       <module name="config" options="-parameters" />
+      <module name="credit-card" options="-parameters" />
       <module name="customer" options="-parameters" />
       <module name="discovery" options="-parameters" />
       <module name="transactions" options="-parameters" />

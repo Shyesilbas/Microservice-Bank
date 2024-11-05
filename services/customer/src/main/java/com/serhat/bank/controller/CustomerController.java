@@ -41,6 +41,21 @@ public class CustomerController {
         return ResponseEntity.ok(accounts);
     }
 
+    @Operation(summary = "Update related credit card count for a customer")
+    @ApiResponse(responseCode = "200", description = "Credit card count updated for the customer")
+    @PostMapping("/creditCards/{customerId}")
+    public ResponseEntity<Void> updateLinkedCreditCards(@PathVariable Integer customerId) {
+        service.updateLinkedCreditCards(customerId);
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "Update related Account count for a customer")
+    @ApiResponse(responseCode = "200", description = "Credit card count updated for the customer")
+    @PostMapping("/account/{customerId}")
+    public ResponseEntity<Void> updateRelatedAccount(@PathVariable Integer customerId) {
+        service.updateRelatedAccount(customerId);
+        return ResponseEntity.ok().build();
+    }
 
     @Operation(summary = "Fetch the Customers")
     @ApiResponse(responseCode = "200",description = "Customers Fetched")

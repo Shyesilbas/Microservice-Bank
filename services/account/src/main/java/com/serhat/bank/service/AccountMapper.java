@@ -28,6 +28,7 @@ public class AccountMapper {
                 .customerId(request.customerId())
                 .balance(request.balance())
                 .currency(request.currency())
+                .relatedCreditCard(0)
                 .build();
     }
 
@@ -35,7 +36,7 @@ public class AccountMapper {
         String accountNumber;
         do {
             accountNumber = String.valueOf((long) (Math.random() * 1_000_000L));
-        } while (repository.existsByAccountNumber(Integer.valueOf(accountNumber)));
+        } while (repository.existsByAccountNumber(Integer.parseInt(accountNumber)));
         return accountNumber;
     }
 

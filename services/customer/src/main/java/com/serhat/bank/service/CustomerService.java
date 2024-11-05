@@ -52,6 +52,27 @@ public class CustomerService {
      return "Customer created Successfully! Name : "+request.name()+" Personal Id : "+request.personalId() + " Customer Id : "+savedCustomer.getId();
     }
 
+    public void updateLinkedCreditCards(Integer customerId) {
+
+        Customer customer = repository.findById(customerId)
+                .orElseThrow(() -> new RuntimeException("Customer not found"));
+
+
+        customer.setRelatedCreditCard(customer.getRelatedCreditCard() + 1);
+        repository.save(customer);
+    }
+
+    public void updateRelatedAccount(Integer customerId) {
+
+        Customer customer = repository.findById(customerId)
+                .orElseThrow(() -> new RuntimeException("Customer not found"));
+
+
+        customer.setRelatedAccount(customer.getRelatedAccount() + 1);
+        repository.save(customer);
+    }
+
+
     public List<CustomerResponse> allCustomers(){
         return this.repository.findAll()
                 .stream()

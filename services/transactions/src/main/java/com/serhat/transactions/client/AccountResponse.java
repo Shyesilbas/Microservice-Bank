@@ -11,7 +11,6 @@ public record AccountResponse(
         BigDecimal balance,
         CustomerResponse customer
 
-
 ) {
     public void setBalance(BigDecimal add) {
     }

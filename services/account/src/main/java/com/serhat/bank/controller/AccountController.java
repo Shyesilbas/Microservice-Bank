@@ -56,6 +56,14 @@ public class AccountController {
     }
 
 
+    @Operation(summary = "Update related credit card count for a customer")
+    @ApiResponse(responseCode = "200", description = "Credit card count updated for the customer")
+    @PostMapping("/creditCards/{accountId}")
+    public ResponseEntity<Void> updateLinkedCreditCards(@PathVariable Integer accountId) {
+        accountService.updateLinkedCreditCards(accountId);
+        return ResponseEntity.ok().build();
+    }
+
     @Operation(summary = "Fetch All Accounts")
     @ApiResponse(responseCode = "200", description = "Accounts Fetched Successfully")
     @GetMapping

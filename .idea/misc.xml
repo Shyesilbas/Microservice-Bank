@@ -13,6 +13,8 @@
         <option value="$PROJECT_DIR$/services/account/pom.xml" />
         <option value="$PROJECT_DIR$/transactions/pom.xml" />
         <option value="$PROJECT_DIR$/services/transactions/pom.xml" />
+        <option value="$PROJECT_DIR$/credit-card/pom.xml" />
+        <option value="$PROJECT_DIR$/services/credit-card/pom.xml" />
       </list>
     </option>
   </component>

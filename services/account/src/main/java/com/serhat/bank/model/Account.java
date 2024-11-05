@@ -28,6 +28,8 @@ public class Account {
     @Column(name = "customer_id")
     private Integer customerId;
     private int accountNumber;
+    @Column(name = "related_credit_card")
+    private Integer relatedCreditCard=0;
 
 
 }

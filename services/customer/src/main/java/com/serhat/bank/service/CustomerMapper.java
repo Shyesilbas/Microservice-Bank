@@ -23,6 +23,8 @@ public class CustomerMapper {
                 .email(request.email())
                 .monthlyIncome(request.monthlyIncome())
                 .occupation(request.occupation())
+                .relatedAccount(0)
+                .relatedCreditCard(0)
                 .build();
     }
 
