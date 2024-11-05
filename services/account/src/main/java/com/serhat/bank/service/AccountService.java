@@ -3,6 +3,7 @@ package com.serhat.bank.service;
 import com.serhat.bank.client.*;
 import com.serhat.bank.dto.AccountRequest;
 import com.serhat.bank.dto.AccountResponse;
+import com.serhat.bank.dto.TransferRequest;
 import com.serhat.bank.kafka.AccountCreatedEvent;
 import com.serhat.bank.kafka.Status;
 import com.serhat.bank.model.Account;
@@ -72,6 +73,19 @@ public class AccountService {
         CustomerResponse customer = customerClient.findCustomerById(Integer.valueOf(request.customerId()));
         return new DepositResponse(account.getAccountNumber(), request.description(), request.amount(), customer);
     }
+
+    /*
+    public TransferRequest updateBalancesAfterTransfer(TransferRequest request) throws AccountNotFoundException {
+        Account account = repository.findByAccountNumber(Integer.parseInt(request.accountNumber()))
+                .orElseThrow(() -> new AccountNotFoundException("Account not found"));
+
+        account.setBalance(account.getBalance().add(request.amount()));
+        repository.save(account);
+
+        CustomerResponse customer = customerClient.findCustomerById(Integer.valueOf(request.customerId()));
+        return new DepositResponse(account.getAccountNumber(), request.description(), request.amount(), customer);
+    }
+     */
 
     public WithdrawResponse updateBalanceAfterWithdraw(WithdrawRequest request) throws AccountNotFoundException {
         Account account = repository.findByAccountNumber(Integer.parseInt(request.senderAccountNumber()))

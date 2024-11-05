@@ -1,12 +1,12 @@
 package com.serhat.transactions.dto;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 
-public record DepositRequest(
-        String customerId,
+public record DepositHistory(
         String accountNumber,
         BigDecimal amount,
-        String description
-
+        String description,
+        LocalDateTime transactionDate
 ) {
 }

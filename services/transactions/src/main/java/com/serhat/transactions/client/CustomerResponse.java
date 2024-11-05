@@ -1,7 +1,7 @@
 package com.serhat.transactions.client;
 
 public record CustomerResponse(
-        Integer id,
+        String id,
         String name,
         String surname,
         String email,

@@ -1,9 +1,6 @@
 package com.serhat.transactions.client;
 
-import com.serhat.transactions.dto.DepositRequest;
-import com.serhat.transactions.dto.DepositResponse;
-import com.serhat.transactions.dto.WithdrawRequest;
-import com.serhat.transactions.dto.WithdrawResponse;
+import com.serhat.transactions.dto.*;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,6 +16,8 @@ public interface AccountClient {
 
     @PostMapping("/withdraw")
     WithdrawResponse updateBalanceAfterWithdraw(@RequestBody WithdrawRequest request);
+
+
 
 
 }

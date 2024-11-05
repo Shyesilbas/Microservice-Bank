@@ -1,24 +1,31 @@
 package com.serhat.transactions.service;
 
+import com.serhat.transactions.dto.TransferRequest;
+import com.serhat.transactions.dto.TransferResponse;
+import com.serhat.transactions.dto.WithdrawHistory;
+import com.serhat.transactions.dto.DepositHistory;
 import com.serhat.transactions.client.*;
 import com.serhat.transactions.dto.DepositRequest;
+
 import com.serhat.transactions.dto.DepositResponse;
 import com.serhat.transactions.dto.WithdrawRequest;
 import com.serhat.transactions.dto.WithdrawResponse;
 import com.serhat.transactions.entity.Status;
 import com.serhat.transactions.entity.Transaction;
 import com.serhat.transactions.entity.TransactionType;
+import com.serhat.transactions.exception.*;
 import com.serhat.transactions.kafka.DepositEvent;
+import com.serhat.transactions.kafka.TransferEvent;
 import com.serhat.transactions.kafka.WithdrawalEvent;
 import com.serhat.transactions.repository.TransactionRepository;
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.cloud.client.loadbalancer.CompletionContext;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -29,43 +36,91 @@ public class TransactionService {
     private final CustomerClient customerClient;
     private final KafkaTemplate<String, DepositEvent> kafkaTemplateForDeposit;
     private final KafkaTemplate<String, WithdrawalEvent> kafkaTemplateForWithdrawal;
+    private final KafkaTemplate<String, TransferEvent> kafkaTemplateForTransfer;
 
 
-    public DepositResponse deposit(DepositRequest request){
-       AccountResponse response = accountClient.findByAccountNumber(request.accountNumber());
-       CustomerResponse customer = customerClient.findCustomerById(Integer.valueOf(request.customerId()));
+    public List<DepositHistory> depositHistories(String accountNumber){
+        return repository.findByReceiverAccountNumberAndTransactionType(accountNumber,TransactionType.DEPOSIT)
+                .stream()
+                .map(transaction -> new DepositHistory(
+                        transaction.getReceiverAccountNumber(),
+                        transaction.getAmount(),
+                        transaction.getDescription(),
+                        transaction.getTransactionDate()
+                ))
+                .toList();
+    }
 
-       if(response == null){
-           throw new RuntimeException("Account Not found");
-       }
-       if(customer == null){
-           throw new RuntimeException("Customer NOT found");
-       }
-        Transaction transaction = Transaction.builder()
-                .senderCustomerId(null)
-                .receiverCustomerId(String.valueOf(response.id()))
-                .senderAccountNumber(null)
-                .receiverAccountNumber(String.valueOf(response.accountNumber()))
-                .description(request.description())
-                .amount(request.amount())
-                .status(Status.SUCCESSFUL)
-                .transactionType(TransactionType.DEPOSIT)
-                .transactionDate(LocalDateTime.now())
-                .build();
+    public List<WithdrawHistory> withdrawHistories(String accountNumber){
+        return repository.findByReceiverAccountNumberAndTransactionType(accountNumber,TransactionType.WITHDRAWAL)
+                .stream()
+                .map(transaction -> new WithdrawHistory(
+                        transaction.getReceiverAccountNumber(),
+                        transaction.getAmount(),
+                        transaction.getDescription(),
+                        transaction.getTransactionDate()
+                ))
+                .toList();
+    }
 
-        BigDecimal updatedBalance = response.balance().add(request.amount());
-        response.setBalance(updatedBalance);
-        accountClient.updateBalanceAfterDeposit(new DepositRequest(request.customerId(),request.accountNumber(), request.amount(), request.description()));
 
-       repository.save(transaction);
-       log.info("Transaction Type : "+transaction.getTransactionType() + " State : "+transaction.getStatus());
-       log.info("Kafka Message sending for the Deposit ...");
-       DepositEvent depositEvent = new DepositEvent(transaction.getTransactionId(),transaction.getStatus());
-        kafkaTemplateForDeposit.send("Deposit-transaction",depositEvent);
-       log.info("Kafka topic Sent successfully to topic Deposit-transaction");
-       return new DepositResponse(
-               request.accountNumber(), request.description(), request.amount(),customer.id(),updatedBalance
-       );
+    public DepositResponse deposit(DepositRequest request) {
+        try {
+            AccountResponse response = accountClient.findByAccountNumber(request.accountNumber());
+            CustomerResponse customer = customerClient.findCustomerById(Integer.valueOf(request.customerId()));
+            List<AccountResponse> accountResponse = customerClient.findAccountsByCustomerId(Integer.valueOf(request.customerId()));
+
+            if (response == null) {
+                throw new AccountNotFoundException("Account Not found");
+            }
+            if (customer == null) {
+                throw new CustomerNotFoundException("Customer Not found");
+            }
+            if (accountResponse == null || accountResponse.isEmpty()) {
+                throw new CustomerHasNoAccountsException("Customer has no active accounts");
+            }
+            if (!response.customer().id().equals(request.customerId())) {
+                throw new AccountAndCustomerIdMissmatchException("Account does not belong to the specified customer");
+            }
+            Transaction transaction = Transaction.builder()
+                    .senderCustomerId(null)
+                    .receiverCustomerId(String.valueOf(response.id()))
+                    .senderAccountNumber(null)
+                    .receiverAccountNumber(String.valueOf(response.accountNumber()))
+                    .description(request.description())
+                    .amount(request.amount())
+                    .status(Status.SUCCESSFUL)
+                    .transactionType(TransactionType.DEPOSIT)
+                    .transactionDate(LocalDateTime.now())
+                    .build();
+
+            BigDecimal updatedBalance = response.balance().add(request.amount());
+            response.setBalance(updatedBalance);
+
+            accountClient.updateBalanceAfterDeposit(new DepositRequest(request.customerId(), request.accountNumber(), request.amount(), request.description()));
+
+            repository.save(transaction);
+            log.info("Transaction Type : " + transaction.getTransactionType() + " State : " + transaction.getStatus());
+            log.info("Kafka Message sending for the Deposit ...");
+
+            DepositEvent depositEvent = new DepositEvent(transaction.getTransactionId(), transaction.getStatus());
+            kafkaTemplateForDeposit.send("Deposit-transaction", depositEvent);
+            log.info("Kafka topic Sent successfully to topic Deposit-transaction");
+
+            return new DepositResponse(
+                    request.accountNumber(), request.description(), request.amount(), customer.id(), updatedBalance
+            );
+
+        } catch (AccountNotFoundException | CustomerNotFoundException | CustomerHasNoAccountsException | AccountAndCustomerIdMissmatchException e) {
+            log.error("Error occurred: {}", e.getMessage());
+            throw e;
+        } catch (FeignException e) {
+            log.error("Feign exception occurred: {}", e.getMessage());
+            throw new RuntimeException("Service communication error: " + e.getMessage(), e);
+        } catch (Exception e) {
+            log.error("An unexpected error occurred: {}", e.getMessage());
+            throw new RuntimeException("Unexpected error occurred: " + e.getMessage(), e);
+        }
     }
 
     public WithdrawResponse withdraw(WithdrawRequest request){
@@ -73,15 +128,22 @@ public class TransactionService {
        // CustomerResponse senderCustomer = customerClient.findCustomerById(Integer.valueOf(request.senderCustomerId()));
        // AccountResponse receiverResponse = accountClient.findByAccountNumber(request.receiverAccountNumber());
         AccountResponse senderResponse = accountClient.findByAccountNumber(request.senderAccountNumber());
+        List<AccountResponse> accountResponse =  customerClient.findAccountsByCustomerId(Integer.valueOf(request.receiverCustomerId()));
 
-        if(senderResponse == null){
-            throw new RuntimeException("Sender account does not exists");
+        if(!senderResponse.customer().id().equals(request.receiverCustomerId())){
+            throw new AccountAndCustomerIdMissmatchException("Account does not belong to the specified customer");
+        }
+        if(senderResponse.accountNumber()== null){
+            throw new WrongAccountNumberException("Check your Account Number ");
         }
         if(senderResponse.balance().compareTo(request.amount())<0){
-            throw new RuntimeException("Insufficient Balance!");
+            throw new InsufficientBalanceException("Insufficient Balance!");
         }
         if (request.amount().compareTo(BigDecimal.ZERO)<0){
-            throw new IllegalArgumentException("Amount cannot be negative !");
+            throw new IllegalAmountException("Amount cannot be negative !");
+        }
+        if(accountResponse == null){
+          throw new CustomerHasNoAccountsException("This customer has no active accounts.");
         }
         Transaction transaction = Transaction.builder()
                 .senderCustomerId(String.valueOf(receiverCustomer.id()))
@@ -97,7 +159,12 @@ public class TransactionService {
 
         BigDecimal updatedBalance = senderResponse.balance().subtract(request.amount());
         senderResponse.setBalance(updatedBalance);
-        accountClient.updateBalanceAfterWithdraw(new WithdrawRequest(request.senderAccountNumber(), request.receiverAccountNumber(), request.receiverCustomerId(), request.senderCustomerId(), request.amount() ,request.description()));
+        accountClient.updateBalanceAfterWithdraw(
+                new WithdrawRequest(
+                        request.senderAccountNumber(),
+                        request.receiverCustomerId(),
+                        request.amount()
+                        ,request.description()));
 
         repository.save(transaction);
         log.info("Transaction Type : "+transaction.getTransactionType() + " State : "+transaction.getStatus());
@@ -106,8 +173,108 @@ public class TransactionService {
         kafkaTemplateForWithdrawal.send("Withdrawal-transaction",withdrawalEvent);
         log.info("Kafka topic Sent successfully to topic Withdrawal-transaction");
         return new WithdrawResponse(
-                request.receiverAccountNumber(), request.amount(), request.description(), receiverCustomer.name(), receiverCustomer.surname(),updatedBalance
+                request.senderAccountNumber(),
+                request.amount(),
+                request.description(),
+                receiverCustomer.name(),
+                receiverCustomer.surname(),
+                updatedBalance
         );
     }
+
+    public TransferResponse transfer(TransferRequest request) {
+        try {
+            // Retrieve customer and account information
+            CustomerResponse receiverCustomer = customerClient.findCustomerById(Integer.valueOf(request.receiverId()));
+            CustomerResponse senderCustomer = customerClient.findCustomerById(Integer.valueOf(request.senderId()));
+            AccountResponse receiverAccount = accountClient.findByAccountNumber(request.receiverAccountNumber());
+            AccountResponse senderAccount = accountClient.findByAccountNumber(request.senderAccountNumber());
+
+            // Validate that accounts exist and belong to the correct customers
+            if (senderAccount == null) {
+                throw new WrongAccountNumberException("Sender Account number does not exist. Check it");
+            }
+            if (receiverAccount == null) {
+                throw new WrongAccountNumberException("Receiver Account number does not exist. Check it");
+            }
+            if (!senderAccount.customer().id().equals(request.senderId())) {
+                throw new AccountAndCustomerIdMissmatchException("Sender account does not belong to the specified customer");
+            }
+            if (!receiverAccount.customer().id().equals(request.receiverId())) {
+                throw new AccountAndCustomerIdMissmatchException("Receiver account does not belong to the specified customer");
+            }
+            if (!senderAccount.currency().equals(receiverAccount.currency())) {
+                throw new RuntimeException("Currency Mismatch Between accounts");
+            }
+            if (senderAccount.balance().compareTo(request.amount()) < 0) {
+                throw new InsufficientBalanceException("Insufficient Balance!");
+            }
+
+            // Create a new transaction
+            Transaction transaction = Transaction.builder()
+                    .senderCustomerId(String.valueOf(senderCustomer.id()))
+                    .receiverCustomerId(String.valueOf(receiverCustomer.id()))
+                    .senderAccountNumber(String.valueOf(senderAccount.accountNumber()))
+                    .receiverAccountNumber(String.valueOf(receiverAccount.accountNumber()))
+                    .description(request.description())
+                    .amount(request.amount())
+                    .status(Status.SUCCESSFUL)
+                    .transactionType(TransactionType.TRANSFER)
+                    .transactionDate(LocalDateTime.now())
+                    .build();
+
+            // Update the account balances
+            BigDecimal updatedSenderBalance = senderAccount.balance().subtract(request.amount());
+            senderAccount.setBalance(updatedSenderBalance);
+            BigDecimal updatedReceiverBalance = receiverAccount.balance().add(request.amount());
+            receiverAccount.setBalance(updatedReceiverBalance);
+
+            // Update the balances in the respective accounts
+            accountClient.updateBalanceAfterWithdraw(new WithdrawRequest(
+                    request.senderAccountNumber(),
+                    request.senderId(),
+                    request.amount(),
+                    request.description()));
+
+            accountClient.updateBalanceAfterDeposit(new DepositRequest(
+                    request.receiverId(),
+                    request.receiverAccountNumber(),
+                    request.amount(),
+                    request.description()));
+
+
+            repository.save(transaction);
+            log.info("Transaction Type: {} State: {}", transaction.getTransactionType(), transaction.getStatus());
+
+            // Send Kafka message
+
+            log.info("Kafka Message sending for the Transfer ...");
+            TransferEvent transferEvent = new TransferEvent(transaction.getTransactionId(), transaction.getStatus());
+            kafkaTemplateForTransfer.send("Transfer-transaction", transferEvent);
+            log.info("Kafka topic Sent successfully to topic Transfer-transaction");
+
+
+            // Return the response
+            return new TransferResponse(
+                    request.senderAccountNumber(),
+                    request.senderId(),
+                    request.amount(),
+                    request.receiverAccountNumber(),
+                    request.receiverId(),
+                    request.description(),
+                    LocalDateTime.now(),
+                    senderCustomer.name(),
+                    receiverCustomer.name()
+            );
+
+        } catch (FeignException e) {
+            log.error("Feign exception occurred: {}", e.getMessage());
+            throw new RuntimeException("Service communication error: " + e.getMessage(), e);
+        } catch (Exception e) {
+            log.error("An unexpected error occurred: {}", e.getMessage());
+            throw new RuntimeException("Unexpected error occurred: " + e.getMessage(), e);
+        }
+    }
+
 
 }

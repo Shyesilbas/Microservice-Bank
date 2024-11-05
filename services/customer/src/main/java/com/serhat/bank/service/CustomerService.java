@@ -2,6 +2,8 @@ package com.serhat.bank.service;
 
 
 
+import com.serhat.bank.client.AccountClient;
+import com.serhat.bank.client.AccountResponse;
 import com.serhat.bank.dto.CustomerRequest;
 import com.serhat.bank.dto.CustomerResponse;
 import com.serhat.bank.kafka.CustomerCreatedEvent;
@@ -21,6 +23,7 @@ import java.util.List;
 public class CustomerService {
 
     private final CustomerRepository repository;
+    private final AccountClient accountClient;
     private final CustomerMapper mapper;
     private final KafkaTemplate<String, CustomerCreatedEvent> kafkaTemplate;
 
@@ -82,6 +85,9 @@ public class CustomerService {
         throw new RuntimeException("Customer Not found for Id : "+id);
     }
 
+public List<AccountResponse> findAccountsByCustomerId(Integer customerId){
+        return accountClient.findAccountsByCustomerId(customerId);
+}
 
 
 }

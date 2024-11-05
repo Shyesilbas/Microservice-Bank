@@ -1,5 +1,6 @@
 package com.serhat.bank.controller;
 
+import com.serhat.bank.client.AccountResponse;
 import com.serhat.bank.dto.CustomerRequest;
 import com.serhat.bank.dto.CustomerResponse;
 import com.serhat.bank.model.Customer;
@@ -28,6 +29,18 @@ public class CustomerController {
     public ResponseEntity<String> createCustomer(@RequestBody @Valid CustomerRequest request){
         return ResponseEntity.ok(service.createCustomer(request));
     }
+
+    @Operation(summary = "Accounts For the customer")
+    @ApiResponse(responseCode = "200",description = "Accounts Found Successfully")
+    @GetMapping("/accounts/{customerId}")
+    public ResponseEntity<List<AccountResponse>> findAccountsByCustomerId(@PathVariable Integer customerId) {
+        List<AccountResponse> accounts = service.findAccountsByCustomerId(customerId);
+        if (accounts.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(accounts);
+    }
+
 
     @Operation(summary = "Fetch the Customers")
     @ApiResponse(responseCode = "200",description = "Customers Fetched")
