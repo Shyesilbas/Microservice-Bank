@@ -12,6 +12,8 @@ public record CreditCardResponse(
         BigDecimal limit,
         PaymentDay paymentDay,
         CardType cardType,
-        BillSending billSending
+        BillSending billSending,
+        BigDecimal balance,
+        String cardNumber
 ) {
 }
