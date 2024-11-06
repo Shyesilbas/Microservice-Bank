@@ -1,6 +1,9 @@
-package com.serhat.transactions.client;
+package com.serhat.expenses.client;
 
-import com.serhat.transactions.dto.*;
+import com.serhat.expenses.dto.AccountResponse;
+import com.serhat.expenses.dto.DebtPaymentRequest;
+import com.serhat.expenses.dto.WithdrawRequest;
+import com.serhat.expenses.dto.WithdrawResponse;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 
@@ -13,16 +16,8 @@ public interface AccountClient {
     @GetMapping("/byAccountNumber/{accountNumber}")
     AccountResponse findByAccountNumber(@PathVariable  String accountNumber);
 
-    @PostMapping("/deposit")
-    DepositResponse updateBalanceAfterDeposit (@RequestBody DepositRequest request);
-
-    @PostMapping("/withdraw")
-    WithdrawResponse updateBalanceAfterWithdraw(@RequestBody WithdrawRequest request);
-
     @PutMapping("/debtPayment/{accountNumber}")
     WithdrawResponse updateBalanceAfterCardDebtPayment(@PathVariable String accountNumber , @RequestParam BigDecimal updatedBalance);
-
-
 
 
 }

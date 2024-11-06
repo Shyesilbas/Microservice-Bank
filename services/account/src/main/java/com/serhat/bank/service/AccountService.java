@@ -3,6 +3,7 @@ package com.serhat.bank.service;
 import com.serhat.bank.client.*;
 import com.serhat.bank.dto.AccountRequest;
 import com.serhat.bank.dto.AccountResponse;
+import com.serhat.bank.dto.ResponseForDebtPayment;
 import com.serhat.bank.dto.TransferRequest;
 import com.serhat.bank.kafka.AccountCreatedEvent;
 import com.serhat.bank.kafka.Status;
@@ -47,6 +48,20 @@ public class AccountService {
         kafkaTemplate.send("Account-created", accountCreatedEvent);
         log.info("Kafka Topic sending for The Account Creation -- End");
         return "Account created successfully with ID: " + savedAccount.getId() + " Account Number : " + savedAccount.getAccountNumber() + " Customer Personal Id : " + customer.personalId();
+    }
+
+    public ResponseForDebtPayment updateBalanceAfterCardDebtPayment(String accountNumber, BigDecimal updatedBalance) {
+        Account account = repository.findByAccountNumber(Integer.parseInt(accountNumber))
+                .orElseThrow(() -> new RuntimeException("Account not found with account number: " + accountNumber));
+
+
+        account.setBalance(updatedBalance);
+        repository.save(account);
+
+        return new ResponseForDebtPayment(
+                account.getAccountNumber(),
+                account.getBalance()
+        );
     }
 
 

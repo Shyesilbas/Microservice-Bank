@@ -26,6 +26,7 @@ public class Expenses {
     private LocalDateTime processDate;
     private String cardNumber;
     private BigDecimal amount;
+    @Enumerated(EnumType.STRING)
     private Category category;
 
 

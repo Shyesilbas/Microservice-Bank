@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
@@ -37,10 +38,13 @@ public class CreditCardController {
         return ResponseEntity.ok(creditCardService.findCardByCardNumber(cardNumber));
     }
 
+
+
     // Do not send Request to this endpoint.
     // This endpoint updates the Card Balance end debt with CreditCardClient after a Process Done at expenses microservice
     // Automatically
-    @PutMapping("/updateDebtAndBalance/{cardNumber}")
+    @Transactional
+    @PutMapping ("/updateDebtAndBalance/{cardNumber}")
     public ResponseEntity<Void> updateDebtAndBalanceAfterProcess(
             @PathVariable String cardNumber,
             @RequestParam BigDecimal updatedDebt,

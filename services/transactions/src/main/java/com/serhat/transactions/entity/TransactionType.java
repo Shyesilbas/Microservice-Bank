@@ -1,5 +1,5 @@
 package com.serhat.transactions.entity;
 
 public enum TransactionType {
-    TRANSFER , WITHDRAWAL , DEPOSIT
+    TRANSFER , WITHDRAWAL , DEPOSIT , CARD_DEBT_PAYMENT
 }

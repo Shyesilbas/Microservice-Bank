@@ -15,6 +15,10 @@ public class TransactionController {
     private final TransactionService service;
 
 
+    @PostMapping("/debtPayment")
+    public ResponseEntity<DebtPaymentResponse> payDebt(@RequestBody DebtPaymentRequest request){
+        return ResponseEntity.ok(service.payCardDebt(request));
+    }
 
     @PostMapping("/deposit")
     public ResponseEntity<DepositResponse> deposit(@RequestBody DepositRequest request){
@@ -30,6 +34,7 @@ public class TransactionController {
     public ResponseEntity<TransferResponse> transfer(@RequestBody TransferRequest request){
         return ResponseEntity.ok(service.transfer(request));
     }
+
 
     @GetMapping("/depositHistory")
     public ResponseEntity<List<DepositHistory>> depositHistory(@RequestParam String accountNumber) {

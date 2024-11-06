@@ -1,4 +1,4 @@
-package com.serhat.expenses.dto;
+package com.serhat.transactions.dto;
 
 import java.math.BigDecimal;
 

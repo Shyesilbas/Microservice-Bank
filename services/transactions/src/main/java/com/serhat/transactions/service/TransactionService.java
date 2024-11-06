@@ -1,15 +1,8 @@
 package com.serhat.transactions.service;
 
-import com.serhat.transactions.dto.TransferRequest;
-import com.serhat.transactions.dto.TransferResponse;
-import com.serhat.transactions.dto.WithdrawHistory;
-import com.serhat.transactions.dto.DepositHistory;
+import com.serhat.transactions.dto.*;
 import com.serhat.transactions.client.*;
-import com.serhat.transactions.dto.DepositRequest;
 
-import com.serhat.transactions.dto.DepositResponse;
-import com.serhat.transactions.dto.WithdrawRequest;
-import com.serhat.transactions.dto.WithdrawResponse;
 import com.serhat.transactions.entity.Status;
 import com.serhat.transactions.entity.Transaction;
 import com.serhat.transactions.entity.TransactionType;
@@ -23,6 +16,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -34,6 +29,7 @@ public class TransactionService {
     private final TransactionRepository repository;
     private final AccountClient accountClient;
     private final CustomerClient customerClient;
+    private final CreditCardClient creditCardClient;
     private final KafkaTemplate<String, DepositEvent> kafkaTemplateForDeposit;
     private final KafkaTemplate<String, WithdrawalEvent> kafkaTemplateForWithdrawal;
     private final KafkaTemplate<String, TransferEvent> kafkaTemplateForTransfer;
@@ -64,6 +60,7 @@ public class TransactionService {
     }
 
 
+    @Transactional
     public DepositResponse deposit(DepositRequest request) {
         try {
             AccountResponse response = accountClient.findByAccountNumber(request.accountNumber());
@@ -123,6 +120,7 @@ public class TransactionService {
         }
     }
 
+    @Transactional
     public WithdrawResponse withdraw(WithdrawRequest request){
         CustomerResponse receiverCustomer = customerClient.findCustomerById(Integer.valueOf(request.receiverCustomerId()));
        // CustomerResponse senderCustomer = customerClient.findCustomerById(Integer.valueOf(request.senderCustomerId()));
@@ -181,7 +179,7 @@ public class TransactionService {
                 updatedBalance
         );
     }
-
+@Transactional
     public TransferResponse transfer(TransferRequest request) {
         try {
             // Retrieve customer and account information
@@ -274,6 +272,70 @@ public class TransactionService {
             log.error("An unexpected error occurred: {}", e.getMessage());
             throw new RuntimeException("Unexpected error occurred: " + e.getMessage(), e);
         }
+    }
+
+    @Transactional
+    public DebtPaymentResponse payCardDebt(DebtPaymentRequest request) {
+        CreditCardResponse creditCardResponse = creditCardClient.findCardByCardNumber(request.cardNumber());
+        AccountResponse accountResponse = accountClient.findByAccountNumber(request.accountNumber());
+        CustomerResponse customerResponse = customerClient.findCustomerById(request.customerId());
+
+        if (creditCardResponse == null) {
+            throw new RuntimeException("Card Not Found.");
+        }
+        if (accountResponse == null) {
+            throw new RuntimeException("Account Not Found.");
+        }
+        if(request.amount().compareTo(accountResponse.balance())>0){
+            throw new RuntimeException("Insufficient Balance At Account!");
+        }
+
+        BigDecimal debt = creditCardResponse.debt() != null ? creditCardResponse.debt() : BigDecimal.ZERO;
+        System.out.println("Total Card Debt : "+debt);
+        BigDecimal balance = creditCardResponse.balance() != null ? creditCardResponse.balance() : BigDecimal.ZERO;
+        System.out.println("Total Card Balance : "+balance);
+
+
+        if (request.amount().compareTo(debt) > 0) {
+            throw new RuntimeException("Payment Amount cannot be higher than the total debt .");
+        }
+
+        Transaction transaction = Transaction.builder()
+                .senderCustomerId(String.valueOf(request.customerId()))
+                .receiverCustomerId("Bank")
+                .senderAccountNumber(request.accountNumber())
+                .receiverAccountNumber("Bank")
+                .description(request.description())
+                .amount(request.amount())
+                .status(Status.SUCCESSFUL)
+                .transactionType(TransactionType.TRANSFER)
+                .transactionDate(LocalDateTime.now())
+                .build();
+
+        repository.save(transaction);
+
+        BigDecimal updatedDebt = debt.subtract(request.amount());
+        System.out.println("Updated Card Debt : "+updatedDebt);
+        BigDecimal updatedBalance = balance.add(request.amount());
+        System.out.println("Updated Card Balance : "+updatedBalance);
+
+        creditCardClient.updateDebtAndBalanceAfterProcess(request.cardNumber(), updatedDebt, updatedBalance);
+
+
+        BigDecimal accountBalance = accountResponse.balance();
+        System.out.println("Account Balance : "+accountBalance);
+        BigDecimal updatedAccountBalance = accountResponse.balance().subtract(request.amount());
+        System.out.println("Updated Account Balance After Card debt payment: "+updatedAccountBalance);
+        accountClient.updateBalanceAfterCardDebtPayment(request.accountNumber(), updatedAccountBalance);
+
+        return new DebtPaymentResponse(
+                customerResponse.id(),
+                request.accountNumber(),
+                request.cardNumber(),
+                request.amount(),
+                updatedDebt,
+                updatedBalance
+        );
     }
 
 

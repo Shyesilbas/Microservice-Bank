@@ -15,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 
 import java.math.BigDecimal;
@@ -72,7 +73,8 @@ public class CreditCardService {
                 request.cardType(),
                 request.billSending(),
                 creditCard.getBalance(),
-                creditCard.getCardNumber()
+                creditCard.getCardNumber(),
+                creditCard.getDebt()
         );
     }
 
@@ -117,10 +119,12 @@ public class CreditCardService {
                 creditCard.getCardType(),
                 creditCard.getBillSending(),
                 creditCard.getBalance(),
-                creditCard.getCardNumber()
+                creditCard.getCardNumber(),
+                creditCard.getDebt()
         );
     }
 
+    @Transactional
     public void updateDebtAndBalanceAfterProcess(String cardNumber, BigDecimal updatedDebt, BigDecimal updatedBalance) {
         CreditCard creditCard = repository.findByCardNumber(cardNumber)
                 .orElseThrow(() -> new RuntimeException("Credit Card not found with card number: " + cardNumber));
@@ -131,5 +135,7 @@ public class CreditCardService {
         repository.save(creditCard);
         log.info("Updated debt and balance for card number {}: Debt = {}, Balance = {}", cardNumber, updatedDebt, updatedBalance);
     }
+
+
 
 }

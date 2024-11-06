@@ -6,6 +6,7 @@ import com.serhat.bank.client.WithdrawRequest;
 import com.serhat.bank.client.WithdrawResponse;
 import com.serhat.bank.dto.AccountRequest;
 import com.serhat.bank.dto.AccountResponse;
+import com.serhat.bank.dto.ResponseForDebtPayment;
 import com.serhat.bank.model.Account;
 import com.serhat.bank.service.AccountService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -37,7 +38,13 @@ public class AccountController {
     public ResponseEntity<AccountResponse> findByAccountNumber(@PathVariable int accountNumber){
         return ResponseEntity.ok(accountService.findByAccountNumber(accountNumber));
     }
+    @PutMapping("/debtPayment/{accountNumber}")
+    public ResponseForDebtPayment updateBalanceAfterCardDebtPayment(
+            @PathVariable String accountNumber,
+            @RequestParam BigDecimal updatedBalance) {
 
+        return accountService.updateBalanceAfterCardDebtPayment(accountNumber, updatedBalance);
+    }
 
     @Operation(summary = "Deposit to an Account")
     @ApiResponse(responseCode = "200", description = "Deposit Successful")

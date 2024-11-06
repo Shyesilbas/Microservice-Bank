@@ -14,6 +14,7 @@ public record CreditCardResponse(
         CardType cardType,
         BillSending billSending,
         BigDecimal balance,
-        String cardNumber
+        String cardNumber,
+        BigDecimal debt
 ) {
 }
