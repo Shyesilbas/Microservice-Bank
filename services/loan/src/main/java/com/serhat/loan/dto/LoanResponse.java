@@ -14,6 +14,7 @@ public record LoanResponse(
         String description,
         BigDecimal payback,
         LoanType loanType,
+        BigDecimal monthlyPayment,
         Integer paymentDay,
         ApplicationStatus status
 ) {

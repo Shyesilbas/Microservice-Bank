@@ -411,5 +411,30 @@ public class TransactionService {
         );
     }
 
+    @Transactional
+    public payTotalLoanDebtResponse payTotalLoanDebt(payTotalLoanDebtRequest request){
+        LoanResponse loanResponse = loanClient.findByLoanId(request.loanId());
+        Transaction transaction = Transaction.builder()
+                .senderCustomerId("Customer")
+                .receiverCustomerId("Bank")
+                .senderAccountNumber(request.accountNumber())
+                .receiverAccountNumber("Bank")
+                .description(request.description())
+                .amount(request.amount())
+                .status(Status.SUCCESSFUL)
+                .transactionType(TransactionType.TRANSFER)
+                .transactionDate(LocalDateTime.now())
+                .build();
 
+        repository.save(transaction);
+
+        return new payTotalLoanDebtResponse(
+                request.loanId(),
+                request.accountNumber(),
+                loanResponse.amount(),
+                loanResponse.payback(),
+                request.amount(),
+                LoanStatus.FULLY_PAID
+        );
+    }
 }

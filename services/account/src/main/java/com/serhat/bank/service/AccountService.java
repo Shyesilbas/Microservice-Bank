@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import javax.security.auth.login.AccountNotFoundException;
 import java.math.BigDecimal;
@@ -154,10 +155,12 @@ public class AccountService {
     }
 
 
+    @Transactional
     public LoanResponse updateBalanceAfterLoanApplication(LoanRequest request) throws AccountNotFoundException {
         Account account = repository.findByAccountNumber(Integer.parseInt(request.accountNumber()))
                 .orElseThrow(() -> new AccountNotFoundException("Account not found"));
 
+        BigDecimal debtLeft = request.amount();
         account.setBalance(account.getBalance().add(request.amount()));
         repository.save(account);
 
@@ -179,6 +182,7 @@ public class AccountService {
         );
     }
 
+    @Transactional
     public LoanInstallmentPaymentResponse updateBalanceAfterLoanPayment(LoanPaymentRequest request) throws AccountNotFoundException {
         Account findAccount = repository.findByAccountNumber(Integer.parseInt(request.accountNumber()))
                 .orElseThrow(() -> new AccountNotFoundException("Account not found"));
@@ -202,4 +206,36 @@ public class AccountService {
                 debtAfterPayment
         );
     }
+
+    @Transactional
+    public payTotalLoanDebtResponse updateBalanceAfterTotalLoanPayment(payTotalLoanDebtRequest request) throws AccountNotFoundException {
+        Account account = repository.findByAccountNumber(Integer.parseInt(request.accountNumber()))
+                .orElseThrow(() -> new AccountNotFoundException("Account not found"));
+
+        LoanResponseForTotalPayment loanResponseForTotalPayment = loanClient.findLoanById(request.loanId());
+        LoanResponse loanResponse = loanClient.findByLoanId(request.loanId());
+
+        BigDecimal paymentAmount = request.amount();
+        System.out.println("Payment Amount that customer inputs : "+paymentAmount);
+        BigDecimal totalDebt = loanResponseForTotalPayment.debtLeft();
+        System.out.println("Total Debt left : "+totalDebt);
+
+
+        if (paymentAmount.compareTo(totalDebt) != 0) {
+            throw new IllegalArgumentException("Payment amount should be equal to the debt left.");
+        }
+
+        account.setBalance(account.getBalance().subtract(paymentAmount));
+        repository.save(account);
+
+        return new payTotalLoanDebtResponse(
+                request.loanId(),
+                request.accountNumber(),
+                totalDebt,
+                loanResponse.payback(),
+                paymentAmount,
+                LoanStatus.FULLY_PAID
+        );
+    }
+
 }

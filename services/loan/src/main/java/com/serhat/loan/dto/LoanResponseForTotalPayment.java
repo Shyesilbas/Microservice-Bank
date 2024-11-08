@@ -1,11 +1,14 @@
-package com.serhat.bank.dto;
+package com.serhat.loan.dto;
+
+import com.serhat.loan.entity.LoanType;
 
 import java.math.BigDecimal;
 
-public record LoanResponse(
-        Integer customerId,
+public record LoanResponseForTotalPayment(
+        String customerId,
         BigDecimal amount,
         String accountNumber,
+        BigDecimal debtLeft,
 
         Integer installment,
         String description,

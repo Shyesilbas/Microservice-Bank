@@ -31,6 +31,8 @@ public class Loan {
     private Integer paymentDay;
     private BigDecimal payback;
     private BigDecimal debtLeft;
+    private BigDecimal monthlyPayment;
+    private Integer installmentLeft;
     @CreatedDate
     private LocalDateTime loanApplicationDate;
     @Enumerated(EnumType.STRING)

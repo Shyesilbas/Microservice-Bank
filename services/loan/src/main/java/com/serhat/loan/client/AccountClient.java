@@ -17,4 +17,7 @@ public interface AccountClient {
 
     @PostMapping("/loanPayment")
     LoanInstallmentPaymentResponse payLoanInstallment(@RequestBody LoanInstallmentPayRequest request);
+
+    @PostMapping("/loanTotalPayment")
+    payTotalLoanDebtResponse payTotalLoanDebt(@RequestBody payTotalLoanDebtRequest request);
 }

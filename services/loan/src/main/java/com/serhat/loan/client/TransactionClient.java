@@ -1,19 +1,20 @@
 package com.serhat.loan.client;
 
-import com.serhat.loan.dto.LoanInstallmentPayRequest;
-import com.serhat.loan.dto.LoanInstallmentPaymentResponse;
-import com.serhat.loan.dto.LoanRequest;
-import com.serhat.loan.dto.LoanResponse;
+import com.serhat.loan.dto.*;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 
 @FeignClient(name = "transaction-service",url = "http://localhost:8050/api/v1/transactions")
 public interface TransactionClient {
 
     @PostMapping("/loan")
-    LoanResponse updateTransactionsAfterLoan(LoanRequest request);
+    LoanResponse updateTransactionsAfterLoan(@RequestBody LoanRequest request);
 
 
     @PostMapping("/loanPayment")
-    LoanInstallmentPaymentResponse updateTransactionAfterLoanInstallmentPayment(LoanInstallmentPayRequest request);
+    LoanInstallmentPaymentResponse updateTransactionAfterLoanInstallmentPayment(@RequestBody LoanInstallmentPayRequest request);
+
+    @PostMapping("/loanTotalPayment")
+    payTotalLoanDebtResponse updateTransactionAfterLoanTotalDebtPayment(@RequestBody payTotalLoanDebtRequest request);
 }

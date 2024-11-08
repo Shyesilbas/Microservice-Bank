@@ -40,6 +40,11 @@ public class TransactionController {
         return ResponseEntity.ok(service.payLoanInstallment(request));
     }
 
+    @PostMapping("/loanTotalPayment")
+    public ResponseEntity<payTotalLoanDebtResponse> loanTotalPayment(@RequestBody payTotalLoanDebtRequest request){
+        return ResponseEntity.ok(service.payTotalLoanDebt(request));
+    }
+
     @PostMapping("/transfer")
     public ResponseEntity<TransferResponse> transfer(@RequestBody TransferRequest request){
         return ResponseEntity.ok(service.transfer(request));

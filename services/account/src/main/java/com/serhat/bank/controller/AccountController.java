@@ -59,6 +59,13 @@ public class AccountController {
         return ResponseEntity.ok(response);
     }
 
+    @Operation(summary = "Loan Payment")
+    @ApiResponse(responseCode = "200", description = "Successful")
+    @PostMapping("/loanTotalPayment")
+    public ResponseEntity<payTotalLoanDebtResponse> payTotalLoan(@RequestBody payTotalLoanDebtRequest request) throws AccountNotFoundException {
+        payTotalLoanDebtResponse response = accountService.updateBalanceAfterTotalLoanPayment(request);
+        return ResponseEntity.ok(response);
+    }
 
 
     @Operation(summary = "Loan to an Account")
