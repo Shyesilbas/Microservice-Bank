@@ -1,10 +1,7 @@
 package com.serhat.bank.service;
 
 import com.serhat.bank.client.*;
-import com.serhat.bank.dto.AccountRequest;
-import com.serhat.bank.dto.AccountResponse;
-import com.serhat.bank.dto.ResponseForDebtPayment;
-import com.serhat.bank.dto.TransferRequest;
+import com.serhat.bank.dto.*;
 import com.serhat.bank.kafka.AccountCreatedEvent;
 import com.serhat.bank.kafka.Status;
 import com.serhat.bank.model.Account;
@@ -28,6 +25,7 @@ public class AccountService {
 
     private final AccountRepository repository;
     private final CustomerClient customerClient;
+    private final LoanClient loanClient;
     private final AccountMapper mapper;
     private final KafkaTemplate<String, AccountCreatedEvent> kafkaTemplate;
 
@@ -156,6 +154,52 @@ public class AccountService {
     }
 
 
+    public LoanResponse updateBalanceAfterLoanApplication(LoanRequest request) throws AccountNotFoundException {
+        Account account = repository.findByAccountNumber(Integer.parseInt(request.accountNumber()))
+                .orElseThrow(() -> new AccountNotFoundException("Account not found"));
+
+        account.setBalance(account.getBalance().add(request.amount()));
+        repository.save(account);
+
+        CustomerResponse customer = customerClient.findCustomerById(Integer.valueOf(request.customerId()));
+        BigDecimal interestRate = BigDecimal.valueOf(0.05);
+        BigDecimal totalInterest = request.amount().multiply(interestRate).multiply(BigDecimal.valueOf(request.installment()));
+        BigDecimal payback = request.amount().add(totalInterest);
 
 
+        return new LoanResponse(
+                customer.id(),
+                request.amount(),
+                request.accountNumber(),
+                request.installment(),
+                request.description(),
+                payback,
+                request.loanType(),
+                request.paymentDay()
+        );
+    }
+
+    public LoanInstallmentPaymentResponse updateBalanceAfterLoanPayment(LoanPaymentRequest request) throws AccountNotFoundException {
+        Account findAccount = repository.findByAccountNumber(Integer.parseInt(request.accountNumber()))
+                .orElseThrow(() -> new AccountNotFoundException("Account not found"));
+
+        LoanResponse loanResponse = loanClient.findByLoanId(request.loanId());
+
+        findAccount.setBalance(findAccount.getBalance().subtract(request.amount()));
+
+        BigDecimal totalDebt = loanResponse.amount();
+        BigDecimal debtAfterPayment = totalDebt.subtract(request.amount());
+
+        repository.save(findAccount);
+
+        if(request.amount().compareTo(totalDebt)>0){
+            throw new RuntimeException("Payment Amount cannot be higher than the debt");
+        }
+
+        return new LoanInstallmentPaymentResponse(
+                request.amount(),
+                request.accountNumber(),
+                debtAfterPayment
+        );
+    }
 }

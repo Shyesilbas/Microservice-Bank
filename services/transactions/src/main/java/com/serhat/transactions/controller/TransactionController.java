@@ -25,9 +25,19 @@ public class TransactionController {
         return ResponseEntity.ok(service.deposit(request));
     }
 
+    @PostMapping("/loan")
+    public ResponseEntity<LoanResponse> loan(@RequestBody LoanRequest request){
+        return ResponseEntity.ok(service.loan(request));
+    }
+
     @PostMapping("/withdraw")
     public ResponseEntity<WithdrawResponse> withdraw(@RequestBody WithdrawRequest request){
         return ResponseEntity.ok(service.withdraw(request));
+    }
+
+    @PostMapping("/loanPayment")
+    public ResponseEntity<LoanInstallmentPaymentResponse> loanPayment(@RequestBody LoanPaymentRequest request){
+        return ResponseEntity.ok(service.payLoanInstallment(request));
     }
 
     @PostMapping("/transfer")

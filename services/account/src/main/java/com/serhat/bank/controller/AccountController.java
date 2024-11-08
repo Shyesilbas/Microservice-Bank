@@ -4,9 +4,7 @@ import com.serhat.bank.client.DepositRequest;
 import com.serhat.bank.client.DepositResponse;
 import com.serhat.bank.client.WithdrawRequest;
 import com.serhat.bank.client.WithdrawResponse;
-import com.serhat.bank.dto.AccountRequest;
-import com.serhat.bank.dto.AccountResponse;
-import com.serhat.bank.dto.ResponseForDebtPayment;
+import com.serhat.bank.dto.*;
 import com.serhat.bank.model.Account;
 import com.serhat.bank.service.AccountService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -52,6 +50,23 @@ public class AccountController {
     public ResponseEntity<DepositResponse> deposit(@RequestBody DepositRequest request) throws AccountNotFoundException {
         DepositResponse depositResponse = accountService.updateBalanceAfterDeposit(request);
         return ResponseEntity.ok(depositResponse);
+    }
+    @Operation(summary = "Loan Payment")
+    @ApiResponse(responseCode = "200", description = "Successful")
+    @PostMapping("/loanPayment")
+    public ResponseEntity<LoanInstallmentPaymentResponse> payLoanInstallment(@RequestBody LoanPaymentRequest request) throws AccountNotFoundException {
+        LoanInstallmentPaymentResponse response = accountService.updateBalanceAfterLoanPayment(request);
+        return ResponseEntity.ok(response);
+    }
+
+
+
+    @Operation(summary = "Loan to an Account")
+    @ApiResponse(responseCode = "200", description = "Loan Transaction Successful")
+    @PostMapping("/loan")
+    public ResponseEntity<LoanResponse> deposit(@RequestBody LoanRequest request) throws AccountNotFoundException {
+        LoanResponse loanResponse = accountService.updateBalanceAfterLoanApplication(request);
+        return ResponseEntity.ok(loanResponse);
     }
 
     @Operation(summary = "Withdraw from an Account")

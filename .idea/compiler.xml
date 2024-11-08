@@ -7,6 +7,7 @@
         <sourceOutputDir name="target/generated-sources/annotations" />
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
+        <module name="loan" />
         <module name="discovery" />
         <module name="credit-card" />
         <module name="transactions" />
@@ -25,6 +26,7 @@
       <module name="customer" options="-parameters" />
       <module name="discovery" options="-parameters" />
       <module name="expenses" options="-parameters" />
+      <module name="loan" options="-parameters" />
       <module name="transactions" options="-parameters" />
     </option>
   </component>

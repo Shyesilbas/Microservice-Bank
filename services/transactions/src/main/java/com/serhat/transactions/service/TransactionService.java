@@ -19,6 +19,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -30,6 +32,7 @@ public class TransactionService {
     private final AccountClient accountClient;
     private final CustomerClient customerClient;
     private final CreditCardClient creditCardClient;
+    private final LoanClient loanClient;
     private final KafkaTemplate<String, DepositEvent> kafkaTemplateForDeposit;
     private final KafkaTemplate<String, WithdrawalEvent> kafkaTemplateForWithdrawal;
     private final KafkaTemplate<String, TransferEvent> kafkaTemplateForTransfer;
@@ -335,6 +338,76 @@ public class TransactionService {
                 request.amount(),
                 updatedDebt,
                 updatedBalance
+        );
+    }
+
+    @Transactional
+    public LoanResponse loan(LoanRequest request) {
+
+        Transaction transaction = Transaction.builder()
+                .senderCustomerId("Bank")
+                .receiverCustomerId(request.customerId())
+                .senderAccountNumber("Bank")
+                .receiverAccountNumber(request.accountNumber())
+                .description(request.description())
+                .amount(request.amount())
+                .status(Status.SUCCESSFUL)
+                .transactionType(TransactionType.TRANSFER)
+                .transactionDate(LocalDateTime.now())
+                .build();
+
+        BigDecimal monthlyInterestRate = new BigDecimal("0.05");
+        BigDecimal principal = request.amount();
+        Integer installments = request.installment();
+        BigDecimal payback = principal
+                .multiply(monthlyInterestRate.add(BigDecimal.ONE).pow(installments, MathContext.DECIMAL64))
+                .setScale(2, RoundingMode.HALF_UP);
+
+
+
+        repository.save(transaction);
+
+        return new LoanResponse(
+                request.customerId(),
+                request.amount(),
+                request.accountNumber(),
+                request.installment(),
+                request.description(),
+                payback,
+                request.loanType(),
+                request.paymentDay()
+        );
+    }
+
+    @Transactional
+    public LoanInstallmentPaymentResponse payLoanInstallment(LoanPaymentRequest request){
+        LoanResponse loanResponse = loanClient.findByLoanId(request.loanId());
+        Transaction transaction = Transaction.builder()
+                .senderCustomerId("Customer")
+                .receiverCustomerId("Bank")
+                .senderAccountNumber(request.accountNumber())
+                .receiverAccountNumber("Bank")
+                .description(request.description())
+                .amount(request.amount())
+                .status(Status.SUCCESSFUL)
+                .transactionType(TransactionType.TRANSFER)
+                .transactionDate(LocalDateTime.now())
+                .build();
+
+        // Get total Debt
+        BigDecimal totalDebt = loanResponse.amount();
+        BigDecimal debtAfterPayment = totalDebt.subtract(request.amount());
+
+        if(request.amount().compareTo(totalDebt)>0){
+            throw new RuntimeException("Payment Amount cannot be higher than the debt");
+        }
+
+        repository.save(transaction);
+
+        return new LoanInstallmentPaymentResponse(
+                request.amount(),
+                request.accountNumber(),
+                debtAfterPayment
         );
     }
 
