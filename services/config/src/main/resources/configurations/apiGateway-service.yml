@@ -1,0 +1,51 @@
+server:
+  port: 8222
+
+springdoc:
+  api-docs:
+    path: /api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+    urls:
+      - name: Customer Service
+        url: /aggregate/customer-service/v3/api-docs
+      - name: Account Service
+        url: /aggregate/account-service/v3/api-docs
+      - name: Credit Card Service
+        url: /aggregate/credit-card-service/v3/api-docs
+      - name: Loan Service
+        url: /aggregate/loan-service/v3/api-docs
+      - name: Transaction Service
+        url: /aggregate/transactions-service/v3/api-docs
+      - name: Expenses Service
+        url: /aggregate/expenses-service/v3/api-docs
+
+spring:
+  cloud:
+    gateway:
+      mvc:
+        routes:
+          - id: customer-service
+            uri: lb://CUSTOMER-SERVICE
+            predicates:
+              - Path=/api/v1/customers/**
+          - id: account-service
+            uri: lb://ACCOUNT-SERVICE
+            predicates:
+              - Path=/api/v1/accounts/**
+          - id: credit-card-service
+            uri: lb://CREDIT-CARD-SERVICE
+            predicates:
+              - Path=/api/v1/creditCard/**
+          - id: expenses-service
+            uri: lb://EXPENSES-SERVICE
+            predicates:
+              - Path=/api/v1/expenses/**
+          - id: transactions-service
+            uri: lb://TRANSACTIONS-SERVICE
+            predicates:
+              - Path=/api/v1/transactions/**
+          - id: loan-service
+            uri: lb://LOAN-SERVICE
+            predicates:
+              - Path=/api/v1/loan/**

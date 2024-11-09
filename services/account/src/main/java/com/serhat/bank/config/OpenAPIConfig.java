@@ -1,5 +1,6 @@
 package com.serhat.bank.config;
 
+
 import io.swagger.v3.oas.models.ExternalDocumentation;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
@@ -11,7 +12,7 @@ import org.springframework.context.annotation.Configuration;
 public class OpenAPIConfig {
 
     @Bean
-    public OpenAPI customerServiceAPI(){
+    public OpenAPI accountServiceAPI(){
         return new OpenAPI()
                 .info(new Info().title("Account Service API")
                         .description("Rest Api for Account Service")
@@ -24,3 +25,5 @@ public class OpenAPIConfig {
 
 
 }
+
+

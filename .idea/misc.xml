@@ -19,7 +19,15 @@
         <option value="$PROJECT_DIR$/services/expenses/pom.xml" />
         <option value="$PROJECT_DIR$/loan/pom.xml" />
         <option value="$PROJECT_DIR$/services/loan/pom.xml" />
+        <option value="$PROJECT_DIR$/gateway-api/pom.xml" />
+        <option value="$PROJECT_DIR$/services/gateway-api/pom.xml" />
+        <option value="$PROJECT_DIR$/services/apiGateway/pom.xml" />
       </list>
+    </option>
+    <option name="ignoredFiles">
+      <set>
+        <option value="$PROJECT_DIR$/services/gateway-api/pom.xml" />
+      </set>
     </option>
   </component>
   <component name="ProjectRootManager" version="2" project-jdk-name="openjdk-23" project-jdk-type="JavaSDK">

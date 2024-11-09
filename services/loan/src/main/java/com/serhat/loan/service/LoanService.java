@@ -136,6 +136,22 @@ public class LoanService {
         );
     }
 
+    public LoanResponseForTotalPayment findLoanByLoanId(Integer loanId) {
+        Loan loan = repository.findById(loanId)
+                .orElseThrow(() -> new RuntimeException("Loan not found for id: " + loanId));
+
+        return new LoanResponseForTotalPayment(
+                loan.getCustomerId(),
+                loan.getAmount(),
+                loan.getAccountNumber(),
+                loan.getDebtLeft(),
+                loan.getInstallment(),
+                loan.getDescription(),
+                loan.getPayback(),
+                loan.getLoanType(),
+                loan.getPaymentDay()
+        );
+    }
     @Transactional
     public payTotalLoanDebtResponse closeLoan(payTotalLoanDebtRequest request){
 
@@ -174,23 +190,6 @@ public class LoanService {
                 loan.getPayback(),
                 request.amount(),
                 LoanStatus.FULLY_PAID
-        );
-    }
-
-    public LoanResponseForTotalPayment findLoanByLoanId(Integer loanId) {
-        Loan loan = repository.findById(loanId)
-                .orElseThrow(() -> new RuntimeException("Loan not found for id: " + loanId));
-
-        return new LoanResponseForTotalPayment(
-                loan.getCustomerId(),
-                loan.getAmount(),
-                loan.getAccountNumber(),
-                loan.getDebtLeft(),
-                loan.getInstallment(),
-                loan.getDescription(),
-                loan.getPayback(),
-                loan.getLoanType(),
-                loan.getPaymentDay()
         );
     }
 }

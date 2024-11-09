@@ -10,6 +10,7 @@
         <module name="loan" />
         <module name="discovery" />
         <module name="credit-card" />
+        <module name="apiGateway" />
         <module name="transactions" />
         <module name="config" />
         <module name="account" />
@@ -17,15 +18,20 @@
         <module name="expenses" />
       </profile>
     </annotationProcessing>
+    <bytecodeTargetLevel>
+      <module name="gateway-api" target="17" />
+    </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="account" options="-parameters" />
+      <module name="apiGateway" options="-parameters" />
       <module name="config" options="-parameters" />
       <module name="credit-card" options="-parameters" />
       <module name="customer" options="-parameters" />
       <module name="discovery" options="-parameters" />
       <module name="expenses" options="-parameters" />
+      <module name="gateway-api" options="-parameters" />
       <module name="loan" options="-parameters" />
       <module name="transactions" options="-parameters" />
     </option>

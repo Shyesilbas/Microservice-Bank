@@ -352,7 +352,7 @@ public class TransactionService {
                 .description(request.description())
                 .amount(request.amount())
                 .status(Status.SUCCESSFUL)
-                .transactionType(TransactionType.TRANSFER)
+                .transactionType(TransactionType.LOAN)
                 .transactionDate(LocalDateTime.now())
                 .build();
 
@@ -390,7 +390,7 @@ public class TransactionService {
                 .description(request.description())
                 .amount(request.amount())
                 .status(Status.SUCCESSFUL)
-                .transactionType(TransactionType.TRANSFER)
+                .transactionType(TransactionType.LOAN_DEBT_PAYMENT)
                 .transactionDate(LocalDateTime.now())
                 .build();
 
@@ -422,7 +422,7 @@ public class TransactionService {
                 .description(request.description())
                 .amount(request.amount())
                 .status(Status.SUCCESSFUL)
-                .transactionType(TransactionType.TRANSFER)
+                .transactionType(TransactionType.LOAN_DEBT_PAYMENT)
                 .transactionDate(LocalDateTime.now())
                 .build();
 
