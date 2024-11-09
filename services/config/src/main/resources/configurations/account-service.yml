@@ -40,7 +40,15 @@ resilience4j:
         failureRateThreshold: 50        # Hata oranı %50'yi geçerse devreyi aç
         waitDurationInOpenState: 10000  # Açık durumda 10 saniye beklesin
         permittedNumberOfCallsInHalfOpenState: 3  # Yarı açık durumda 3 çağrıya izin ver
-        minimumNumberOfCalls: 5         # Hata oranı hesaplamak için en az 5 çağrı yapılmalı
+        minimumNumberOfCalls: 5  # Hata oranı hesaplamak için en az 5 çağrı yapılmalı
+
+      LoanServiceCircuitBreaker:
+        registerHealthIndicator: true  # Sağlık göstergesi kaydetsin mi?
+        slidingWindowSize: 10           # Son 10 çağrıyı dikkate al
+        failureRateThreshold: 50        # Hata oranı %50'yi geçerse devreyi aç
+        waitDurationInOpenState: 10000  # Açık durumda 10 saniye beklesin
+        permittedNumberOfCallsInHalfOpenState: 3  # Yarı açık durumda 3 çağrıya izin ver
+        minimumNumberOfCalls: 5
 
   kafka:
     bootstrap-servers: localhost:9092
