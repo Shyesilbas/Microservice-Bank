@@ -19,6 +19,15 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
     }
 
+    @ExceptionHandler(CurrencyMismatchBetweenAccountsException.class)
+    public ResponseEntity<ErrorResponse> handleCurrencyMismatchBetweenAccountsException(CurrencyMismatchBetweenAccountsException ex) {
+        ErrorResponse errorResponse = new ErrorResponse();
+        errorResponse.setStatus(HttpStatus.BAD_REQUEST.value());
+        errorResponse.setError("Currency Mismatch! Currency's must be equal to do transfer.");
+        errorResponse.setMessage(ex.getErrorMessage());
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
     @ExceptionHandler(CustomerHasNoAccountsException.class)
     public ResponseEntity<ErrorResponse> handleCustomerHasNoAccountsException(CustomerHasNoAccountsException ex) {
         ErrorResponse errorResponse = new ErrorResponse();

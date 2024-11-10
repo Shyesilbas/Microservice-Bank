@@ -6,6 +6,10 @@ import com.serhat.expenses.client.CreditCardClient;
 import com.serhat.expenses.client.CustomerClient;
 import com.serhat.expenses.dto.*;
 import com.serhat.expenses.entity.Expenses;
+import com.serhat.expenses.exception.CreditCardNotFoundException;
+import com.serhat.expenses.exception.CustomerNotFoundException;
+import com.serhat.expenses.exception.InsufficientBalanceException;
+import com.serhat.expenses.exception.NegativeAmountException;
 import com.serhat.expenses.kafka.PaymentSuccessfulEvent;
 import com.serhat.expenses.kafka.Status;
 import lombok.RequiredArgsConstructor;
@@ -34,8 +38,11 @@ public class ExpensesService {
         CreditCardResponse creditCardResponse = creditCardClient.findCardByCardNumber(request.cardNumber());
         CustomerResponse customer = customerClient.findCustomerById(request.customerId());
 
-        if (creditCardResponse == null || customer == null) {
-            throw new RuntimeException("Customer or Credit Card not found.");
+        if (creditCardResponse == null) {
+            throw new CreditCardNotFoundException("Credit Card not found.");
+        }
+        if(customer == null){
+            throw new CustomerNotFoundException("Customer Not Found");
         }
 
         BigDecimal balance = creditCardResponse.balance() != null ? creditCardResponse.balance() : BigDecimal.ZERO;
@@ -49,11 +56,11 @@ public class ExpensesService {
 
         BigDecimal amountForProcess = request.amount();
         if (amountForProcess == null) {
-            throw new RuntimeException("Requested amount is null.");
+            throw new NegativeAmountException("Requested amount is null.");
         }
 
         if (amountForProcess.compareTo(balance) > 0) {
-            throw new RuntimeException("Insufficient Balance!");
+            throw new InsufficientBalanceException("Insufficient Balance!");
         }
 
 

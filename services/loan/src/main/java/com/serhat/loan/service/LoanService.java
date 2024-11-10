@@ -2,11 +2,11 @@ package com.serhat.loan.service;
 
 import com.serhat.loan.Repository.LoanRepository;
 import com.serhat.loan.client.AccountClient;
-import com.serhat.loan.client.CustomerClient;
 import com.serhat.loan.client.TransactionClient;
 import com.serhat.loan.dto.*;
 import com.serhat.loan.entity.ApplicationStatus;
 import com.serhat.loan.entity.Loan;
+import com.serhat.loan.exception.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,7 +14,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -22,14 +21,12 @@ public class LoanService {
     private final LoanRepository repository;
     private final AccountClient accountClient;
     private final TransactionClient transactionClient;
-    private final CustomerClient customerClient;
-
 
     @Transactional
     public LoanResponse applyToLoan(LoanRequest request) {
         AccountResponse accountResponse = accountClient.findByAccountNumber(request.accountNumber());
         if (accountResponse == null) {
-            throw new RuntimeException("Account not found: " + request.accountNumber());
+            throw new AccountNotFoundException("Account not found: " + request.accountNumber());
         }
 
         BigDecimal monthlyInterestRate = new BigDecimal("0.05");
@@ -79,7 +76,7 @@ public class LoanService {
 
     public LoanResponse findByLoanId(Integer loanId){
         Loan loan = repository.findById(loanId)
-                .orElseThrow(() -> new RuntimeException("Loan not found for id: " + loanId));
+                .orElseThrow(() -> new LoanNotFoundException("Loan not found for id: " + loanId));
 
         return new LoanResponse(
                 loan.getCustomerId(),
@@ -100,23 +97,23 @@ public class LoanService {
     public LoanInstallmentPaymentResponse payLoanInstallment(LoanInstallmentPayRequest request) {
         AccountResponse accountResponse = accountClient.findByAccountNumber(request.accountNumber());
         if (accountResponse == null) {
-            throw new RuntimeException("Account not found: " + request.accountNumber());
+            throw new AccountNotFoundException("Account not found: " + request.accountNumber());
         }
 
         Loan loan = repository.findById(request.loanId())
-                .orElseThrow(() -> new RuntimeException("Loan not found: " + request.loanId()));
+                .orElseThrow(() -> new LoanNotFoundException("Loan not found: " + request.loanId()));
 
         BigDecimal monthlyPayment = loan.getMonthlyPayment();
 
         if (request.amount().compareTo(monthlyPayment) != 0) {
-            throw new RuntimeException("Monthly Payment is: " + monthlyPayment + ", not: " + request.amount());
+            throw new MonthlyPaymentMismatchException("Monthly Payment is: " + monthlyPayment + ", not: " + request.amount());
         }
         if (loan.getInstallmentLeft() <= 0) {
-            throw new RuntimeException("Loan debt is fully paid!");
+            throw new DebtAlreadyPaidException("Loan debt is fully paid!");
         }
 
         if (accountResponse.balance().compareTo(request.amount()) < 0) {
-            throw new RuntimeException("Insufficient balance for loan installment payment.");
+            throw new InsufficientBalanceException("Insufficient balance for loan installment payment.");
         }
 
         BigDecimal totalDebt = loan.getDebtLeft();
@@ -137,7 +134,7 @@ public class LoanService {
 
     public LoanResponseForTotalPayment findLoanByLoanId(Integer loanId) {
         Loan loan = repository.findById(loanId)
-                .orElseThrow(() -> new RuntimeException("Loan not found for id: " + loanId));
+                .orElseThrow(() -> new LoanNotFoundException("Loan not found for id: " + loanId));
 
         return new LoanResponseForTotalPayment(
                 loan.getCustomerId(),
@@ -156,24 +153,26 @@ public class LoanService {
 
         AccountResponse accountResponse = accountClient.findByAccountNumber(request.accountNumber());
         if (accountResponse == null) {
-            throw new RuntimeException("Account not found: " + request.accountNumber());
+            throw new AccountNotFoundException("Account not found: " + request.accountNumber());
         }
         Loan loan = repository.findById(request.loanId())
-                .orElseThrow(() -> new RuntimeException("Loan not found: " + request.loanId()));
+                .orElseThrow(() -> new LoanNotFoundException("Loan not found: " + request.loanId()));
 
 
+        BigDecimal accountBalance = accountResponse.balance();
+        System.out.println("Account Balance : "+accountBalance);
         BigDecimal totalDebtLeft = loan.getDebtLeft();
         System.out.println("Total Debt left : "+totalDebtLeft);
         Integer totalInstallmentLeft = loan.getInstallmentLeft();
 
         if (totalInstallmentLeft <= 0) {
-            throw new RuntimeException("Loan debt is fully paid!");
+            throw new DebtAlreadyPaidException("Loan debt is fully paid!");
         }
         if (request.amount().compareTo(totalDebtLeft) != 0) {
-            throw new RuntimeException("Total Payment is: " + totalDebtLeft + ", not: " + request.amount());
+            throw new TotalLoanPaymentMismatchException("Total Payment is: " + totalDebtLeft + ", not: " + request.amount());
         }
         if (accountResponse.balance().compareTo(request.amount()) < 0) {
-            throw new RuntimeException("Insufficient balance for loan installment payment.");
+            throw new InsufficientBalanceException("Insufficient balance for loan installment payment.");
         }
 
         loan.setInstallmentLeft(0);
@@ -181,7 +180,7 @@ public class LoanService {
         repository.save(loan);
         accountClient.payTotalLoanDebt(request);
         transactionClient.updateTransactionAfterLoanTotalDebtPayment(request);
-
+        System.out.println("Account Balance After payment : "+accountBalance.subtract(request.amount()));
         return new payTotalLoanDebtResponse(
                 request.loanId(),
                 request.accountNumber(),

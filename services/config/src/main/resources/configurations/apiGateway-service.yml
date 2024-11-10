@@ -49,3 +49,9 @@ spring:
             uri: lb://LOAN-SERVICE
             predicates:
               - Path=/api/v1/loan/**
+
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: http://localhost:8080/realms/spring-microservices-security-realm

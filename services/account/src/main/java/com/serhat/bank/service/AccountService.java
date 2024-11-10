@@ -2,6 +2,9 @@ package com.serhat.bank.service;
 
 import com.serhat.bank.client.*;
 import com.serhat.bank.dto.*;
+import com.serhat.bank.exception.AccountNotFoundException;
+import com.serhat.bank.exception.CustomerNotFoundException;
+import com.serhat.bank.exception.InsufficientBalanceException;
 import com.serhat.bank.kafka.AccountCreatedEvent;
 import com.serhat.bank.kafka.Status;
 import com.serhat.bank.model.Account;
@@ -12,7 +15,6 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import javax.security.auth.login.AccountNotFoundException;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -27,15 +29,14 @@ public class AccountService {
     private final AccountRepository repository;
     private final CustomerClient customerClient;
     private final LoanClient loanClient;
-    private final TransactionClient transactionClient;
     private final AccountMapper mapper;
     private final KafkaTemplate<String, AccountCreatedEvent> kafkaTemplate;
 
-    public String createAccount(AccountRequest request) {
+    public AccountResponse createAccount(AccountRequest request) {
 
         CustomerResponse customer = customerClient.findCustomerById(request.customerId());
         if (customer == null) {
-            throw new RuntimeException("Customer not found for ID: " + request.customerId());
+            throw new CustomerNotFoundException("Customer not found for ID: " + request.customerId());
         }
 
         Account account = mapper.mapToAccount(request);
@@ -47,12 +48,20 @@ public class AccountService {
         log.info("Kafka Topic sending for The Account Creation -- Started");
         kafkaTemplate.send("Account-created", accountCreatedEvent);
         log.info("Kafka Topic sending for The Account Creation -- End");
-        return "Account created successfully with ID: " + savedAccount.getId() + " Account Number : " + savedAccount.getAccountNumber() + " Customer Personal Id : " + customer.personalId();
+        return new AccountResponse(
+                savedAccount.getId(),
+                savedAccount.getAccountNumber(),
+                request.accountName(),
+                request.currency(),
+                request.accountType(),
+                request.balance(),
+                customer
+        );
     }
 
     public ResponseForDebtPayment updateBalanceAfterCardDebtPayment(String accountNumber, BigDecimal updatedBalance) {
         Account account = repository.findByAccountNumber(Integer.parseInt(accountNumber))
-                .orElseThrow(() -> new RuntimeException("Account not found with account number: " + accountNumber));
+                .orElseThrow(() -> new AccountNotFoundException("Account not found with account number: " + accountNumber));
 
 
         account.setBalance(updatedBalance);
@@ -75,7 +84,7 @@ public class AccountService {
     // For the AccountId
     public AccountResponse findById(Integer id) {
         Account account = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Account not found"));
+                .orElseThrow(() -> new AccountNotFoundException("Account not found"));
         return mapper.accountData(account);
     }
 
@@ -103,31 +112,7 @@ public class AccountService {
     }
      */
 
-    public WithdrawResponse updateBalanceAfterWithdraw(WithdrawRequest request) throws AccountNotFoundException {
-        Account account = repository.findByAccountNumber(Integer.parseInt(request.senderAccountNumber()))
-                .orElseThrow(() -> new AccountNotFoundException("Account not found"));
 
-        BigDecimal newBalance = account.getBalance().subtract(request.amount());
-        if (newBalance.compareTo(BigDecimal.ZERO) < 0) {
-            throw new IllegalArgumentException("Insufficient balance");
-        }
-
-        account.setBalance(newBalance);
-        repository.save(account);
-
-        CustomerResponse customer = customerClient.findCustomerById(Integer.valueOf(request.receiverCustomerId()));
-        return new WithdrawResponse(account.getAccountNumber(), request.amount(), request.description(), customer);
-    }
-
-    public void updateLinkedCreditCards(Integer accountId) {
-
-        Account account = repository.findById(accountId)
-                .orElseThrow(() -> new RuntimeException("Account not found"));
-
-
-        account.setRelatedCreditCard(account.getRelatedCreditCard() + 1);
-        repository.save(account);
-    }
 
 
     // For the CustomerId
@@ -154,7 +139,27 @@ public class AccountService {
         }
         return mapper.accountData(account.get());
     }
+    public WithdrawResponse updateBalanceAfterWithdraw(WithdrawRequest request) throws AccountNotFoundException {
+        Account account = repository.findByAccountNumber(Integer.parseInt(request.senderAccountNumber()))
+                .orElseThrow(() -> new AccountNotFoundException("Account not found"));
 
+        BigDecimal newBalance = account.getBalance().subtract(request.amount());
+        account.setBalance(newBalance);
+        repository.save(account);
+
+        CustomerResponse customer = customerClient.findCustomerById(Integer.valueOf(request.receiverCustomerId()));
+        return new WithdrawResponse(account.getAccountNumber(), request.amount(), request.description(), customer);
+    }
+
+    public void updateLinkedCreditCards(Integer accountId) {
+
+        Account account = repository.findById(accountId)
+                .orElseThrow(() -> new AccountNotFoundException("Account not found"));
+
+
+        account.setRelatedCreditCard(account.getRelatedCreditCard() + 1);
+        repository.save(account);
+    }
 
     @Transactional
     public LoanResponse updateBalanceAfterLoanApplication(LoanRequest request) throws AccountNotFoundException {
@@ -196,11 +201,6 @@ public class AccountService {
         BigDecimal debtAfterPayment = totalDebt.subtract(request.amount());
 
         repository.save(findAccount);
-
-        if(request.amount().compareTo(totalDebt)>0){
-            throw new RuntimeException("Payment Amount cannot be higher than the debt");
-        }
-
         return new LoanInstallmentPaymentResponse(
                 request.amount(),
                 request.accountNumber(),
@@ -220,11 +220,6 @@ public class AccountService {
         System.out.println("Payment Amount that customer inputs : "+paymentAmount);
         BigDecimal totalDebt = loanResponseForTotalPayment.debtLeft();
         System.out.println("Total Debt left : "+totalDebt);
-
-
-        if (paymentAmount.compareTo(totalDebt) != 0) {
-            throw new IllegalArgumentException("Payment amount should be equal to the debt left.");
-        }
 
         account.setBalance(account.getBalance().subtract(paymentAmount));
         repository.save(account);

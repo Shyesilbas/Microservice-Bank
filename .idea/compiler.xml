@@ -20,6 +20,7 @@
     </annotationProcessing>
     <bytecodeTargetLevel>
       <module name="gateway-api" target="17" />
+      <module name="notification" target="17" />
     </bytecodeTargetLevel>
   </component>
   <component name="JavacSettings">
@@ -33,6 +34,7 @@
       <module name="expenses" options="-parameters" />
       <module name="gateway-api" options="-parameters" />
       <module name="loan" options="-parameters" />
+      <module name="notification" options="-parameters" />
       <module name="transactions" options="-parameters" />
     </option>
   </component>

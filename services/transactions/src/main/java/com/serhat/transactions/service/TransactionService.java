@@ -219,7 +219,7 @@ public class TransactionService {
                 throw new AccountAndCustomerIdMissmatchException("Receiver account does not belong to the specified customer");
             }
             if (!senderAccount.currency().equals(receiverAccount.currency())) {
-                throw new RuntimeException("Currency Mismatch Between accounts");
+                throw new CurrencyMismatchBetweenAccountsException("Currency Mismatch Between accounts");
             }
             if (senderAccount.balance().compareTo(request.amount()) < 0) {
                 throw new InsufficientBalanceException("Insufficient Balance!");

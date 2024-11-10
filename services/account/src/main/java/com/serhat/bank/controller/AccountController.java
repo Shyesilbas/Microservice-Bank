@@ -27,9 +27,8 @@ public class AccountController {
 //    @Operation(summary = "Create a new Account")
 //    @ApiResponse(responseCode = "200", description = "Account Created Successfully")
     @PostMapping("/create")
-    public ResponseEntity<String> createAccount(@RequestBody AccountRequest request) {
-        String response = accountService.createAccount(request);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<AccountResponse> createAccount(@RequestBody AccountRequest request) {
+       return ResponseEntity.ok(accountService.createAccount(request));
     }
 
     @GetMapping("/byAccountNumber/{accountNumber}")

@@ -7,6 +7,10 @@ import com.serhat.creditcard.dto.CreditCardRequest;
 import com.serhat.creditcard.dto.CreditCardResponse;
 import com.serhat.creditcard.entity.CardStatus;
 import com.serhat.creditcard.entity.CreditCard;
+import com.serhat.creditcard.exception.AccountNotFoundException;
+import com.serhat.creditcard.exception.CardNotFoundException;
+import com.serhat.creditcard.exception.InsufficientBalanceException;
+import com.serhat.creditcard.exception.PaymentRequestMismatchException;
 import com.serhat.creditcard.kafka.CardCreatedEvent;
 import com.serhat.creditcard.kafka.Status;
 import com.serhat.creditcard.repository.CreditCardRepository;
@@ -59,7 +63,15 @@ public class CreditCardService {
         repository.save(creditCard);
         customerClient.updateLinkedCreditCards(customerResponse.id(),creditCard.getId());
         accountClient.updateLinkedCreditCards(accountResponse.id(),creditCard.getId());
-        CardCreatedEvent cardCreatedEvent = new CardCreatedEvent(creditCard.getId(), Status.SUCCESSFUL);
+        CardCreatedEvent cardCreatedEvent = new CardCreatedEvent(
+                creditCard.getId(),
+                Status.SUCCESSFUL,
+                customerResponse.id(),
+                creditCard.getCardNumber(),
+                request.linkedAccountNumber(),
+                request.limit(),
+                request.cardType()
+        );
         log.info("Kafka Topic Sending For Card-created Topic - Started");
         kafkaTemplateForCardCreated.send("Card-created",cardCreatedEvent);
         log.info("Kafka Topic Sent Successfully to topic Card-created -END");
@@ -104,9 +116,9 @@ public class CreditCardService {
     }
 
     public CreditCardResponse findCardByCardNumber(String cardNumber) {
-        // Fetch the credit card by card number
+
         CreditCard creditCard = repository.findByCardNumber(cardNumber)
-                .orElseThrow(() -> new RuntimeException("Card Not found with card number: " + cardNumber));
+                .orElseThrow(() -> new CardNotFoundException("Card Not found with card number: " + cardNumber));
 
         // Fetch the customer details associated with the card
         CustomerResponse customerResponse = customerClient.findCustomerById(Integer.valueOf(creditCard.getCustomerId()));
@@ -128,7 +140,7 @@ public class CreditCardService {
     @Transactional
     public void updateDebtAndBalanceAfterProcess(String cardNumber, BigDecimal updatedDebt, BigDecimal updatedBalance) {
         CreditCard creditCard = repository.findByCardNumber(cardNumber)
-                .orElseThrow(() -> new RuntimeException("Credit Card not found with card number: " + cardNumber));
+                .orElseThrow(() -> new CardNotFoundException("Credit Card not found with card number: " + cardNumber));
 
         creditCard.setDebt(updatedDebt);
         creditCard.setBalance(updatedBalance);
@@ -147,10 +159,10 @@ public class CreditCardService {
         CustomerResponse customerResponse = customerClient.findCustomerById(request.customerId());
 
         if (accountResponse == null) {
-            throw new RuntimeException("Account Not Found.");
+            throw new AccountNotFoundException("Account Not Found.");
         }
         if(request.amount().compareTo(accountResponse.balance())>0){
-            throw new RuntimeException("Insufficient Balance At Account!");
+            throw new InsufficientBalanceException("Insufficient Balance At Account!");
         }
 
         BigDecimal debt = creditCard.getDebt();
@@ -160,7 +172,7 @@ public class CreditCardService {
 
 
         if (request.amount().compareTo(debt) > 0) {
-            throw new RuntimeException("Payment Amount cannot be higher than the total debt .");
+            throw new PaymentRequestMismatchException("Payment Amount cannot be higher than the total debt .");
         }
 
         BigDecimal updatedDebt = debt.subtract(request.amount());

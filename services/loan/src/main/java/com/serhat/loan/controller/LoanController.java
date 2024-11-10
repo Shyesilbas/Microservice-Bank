@@ -34,7 +34,7 @@ public class LoanController {
         return ResponseEntity.ok(service.payLoanInstallment(request));
     }
 
-    @PostMapping("/payTotalLonaDebt")
+    @PostMapping("/payTotalLoanDebt")
     public ResponseEntity<payTotalLoanDebtResponse> payTotalLoanDebt(@RequestBody payTotalLoanDebtRequest request){
         return ResponseEntity.ok(service.closeLoan(request));
     }
