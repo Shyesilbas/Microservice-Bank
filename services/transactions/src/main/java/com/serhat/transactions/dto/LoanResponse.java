@@ -10,6 +10,8 @@ public record LoanResponse(
         String description,
         BigDecimal payback,
         LoanType loanType,
-        Integer paymentDay
+        Integer paymentDay,
+        Integer installmentLeft,
+        BigDecimal debtLeft
 ) {
 }

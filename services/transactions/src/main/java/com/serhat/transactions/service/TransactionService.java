@@ -142,8 +142,6 @@ public class TransactionService {
     @Transactional
     public WithdrawResponse withdraw(WithdrawRequest request){
         CustomerResponse receiverCustomer = customerClient.findCustomerById(Integer.valueOf(request.receiverCustomerId()));
-       // CustomerResponse senderCustomer = customerClient.findCustomerById(Integer.valueOf(request.senderCustomerId()));
-       // AccountResponse receiverResponse = accountClient.findByAccountNumber(request.receiverAccountNumber());
         AccountResponse senderResponse = accountClient.findByAccountNumber(request.senderAccountNumber());
         List<AccountResponse> accountResponse =  customerClient.findAccountsByCustomerId(Integer.valueOf(request.receiverCustomerId()));
 
@@ -246,7 +244,6 @@ public class TransactionService {
             BigDecimal updatedReceiverBalance = receiverAccount.balance().add(request.amount());
             receiverAccount.setBalance(updatedReceiverBalance);
 
-            // Update the balances in the respective accounts
             accountClient.updateBalanceAfterWithdraw(new WithdrawRequest(
                     request.senderAccountNumber(),
                     request.senderId(),
@@ -263,7 +260,6 @@ public class TransactionService {
             repository.save(transaction);
             log.info("Transaction Type: {} State: {}", transaction.getTransactionType(), transaction.getStatus());
 
-            // Send Kafka message
 
             log.info("Kafka Message sending for the Transfer ...");
             TransferEvent transferEvent = new TransferEvent(transaction.getTransactionId(), transaction.getStatus());
@@ -271,7 +267,6 @@ public class TransactionService {
             log.info("Kafka topic Sent successfully to topic Transfer-transaction");
 
 
-            // Return the response
             return new TransferResponse(
                     request.senderAccountNumber(),
                     request.senderId(),
@@ -295,7 +290,7 @@ public class TransactionService {
 
 
     @Transactional
-    public LoanResponse loan(LoanRequest request) {
+    public LoanResponse updateTransactionHistoryAfterLoanApplication(LoanRequest request) {
 
         Transaction transaction = Transaction.builder()
                 .senderCustomerId("Bank")
@@ -328,44 +323,14 @@ public class TransactionService {
                 request.description(),
                 payback,
                 request.loanType(),
-                request.paymentDay()
+                request.paymentDay(),
+                request.installment(),
+                payback
         );
     }
 
     @Transactional
-    public LoanInstallmentPaymentResponse payLoanInstallment(LoanPaymentRequest request){
-        LoanResponse loanResponse = loanClient.findByLoanId(request.loanId());
-        Transaction transaction = Transaction.builder()
-                .senderCustomerId("Customer")
-                .receiverCustomerId("Bank")
-                .senderAccountNumber(request.accountNumber())
-                .receiverAccountNumber("Bank")
-                .description(request.description())
-                .amount(request.amount())
-                .status(Status.SUCCESSFUL)
-                .transactionType(TransactionType.LOAN_DEBT_PAYMENT)
-                .transactionDate(LocalDateTime.now())
-                .build();
-
-        // Get total Debt
-        BigDecimal totalDebt = loanResponse.amount();
-        BigDecimal debtAfterPayment = totalDebt.subtract(request.amount());
-
-        if(request.amount().compareTo(totalDebt)>0){
-            throw new RuntimeException("Payment Amount cannot be higher than the debt");
-        }
-
-        repository.save(transaction);
-
-        return new LoanInstallmentPaymentResponse(
-                request.amount(),
-                request.accountNumber(),
-                debtAfterPayment
-        );
-    }
-
-    @Transactional
-    public payTotalLoanDebtResponse payTotalLoanDebt(payTotalLoanDebtRequest request){
+    public payTotalLoanDebtResponse updateTransactionHistoryAfterPayTotalLoanDebt(payTotalLoanDebtRequest request){
         LoanResponse loanResponse = loanClient.findByLoanId(request.loanId());
         Transaction transaction = Transaction.builder()
                 .senderCustomerId("Customer")
@@ -391,7 +356,7 @@ public class TransactionService {
         );
     }
 
-    public CardDebtPaymentResponse updateTransactionHistory(CardDebtPaymentRequest request) {
+    public CardDebtPaymentResponse updateTransactionHistoryAfterCardDebtPayment(CardDebtPaymentRequest request) {
         CreditCardResponse creditCardResponse = creditCardClient.findCardByCardNumber(request.cardNumber());
         CustomerResponse customerResponse = customerClient.findCustomerById(request.customerId());
         if(creditCardResponse == null) {
@@ -419,5 +384,39 @@ public class TransactionService {
                     creditCardResponse.debt(),
                     creditCardResponse.balance()
             );
+    }
+
+
+    public LoanInstallmentPaymentResponse updateTransactionHistoryAfterLoanInstallmentPayment(LoanInstallmentPayRequest request) {
+        CreditCardResponse creditCardResponse = creditCardClient.findCardByCardNumber(request.accountNumber());
+        CustomerResponse customerResponse = customerClient.findCustomerById(request.customerId());
+        LoanResponse loanResponse = loanClient.findByLoanId(request.loanId());
+        if(creditCardResponse == null) {
+            throw new RuntimeException("Card Not Found");
+        }
+        if(customerResponse == null){
+            throw new RuntimeException("Customer Not Found");
+
+        }
+        Transaction transaction = Transaction.builder()
+                .senderCustomerId(String.valueOf(request.customerId()))
+                .receiverCustomerId("Credit Card - Bank")
+                .senderAccountNumber(request.accountNumber())
+                .receiverAccountNumber("Credit Card - Bank")
+                .description(request.description())
+                .amount(request.amount())
+                .status(Status.SUCCESSFUL)
+                .transactionType(TransactionType.CARD_DEBT_PAYMENT)
+                .transactionDate(LocalDateTime.now())
+                .build();
+
+        repository.save(transaction);
+
+        return new LoanInstallmentPaymentResponse(
+                request.amount(),
+                request.accountNumber(),
+                loanResponse.debtLeft(),
+                loanResponse.installmentLeft()
+        );
     }
 }

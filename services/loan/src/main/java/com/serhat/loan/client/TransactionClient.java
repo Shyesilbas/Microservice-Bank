@@ -12,9 +12,12 @@ public interface TransactionClient {
     LoanResponse updateTransactionsAfterLoan(@RequestBody LoanRequest request);
 
 
-    @PostMapping("/loanPayment")
+    @PostMapping("/loanInstallmentPayment")
     LoanInstallmentPaymentResponse updateTransactionAfterLoanInstallmentPayment(@RequestBody LoanInstallmentPayRequest request);
 
     @PostMapping("/loanTotalPayment")
     payTotalLoanDebtResponse updateTransactionAfterLoanTotalDebtPayment(@RequestBody payTotalLoanDebtRequest request);
+
+
+
 }

@@ -27,7 +27,6 @@ public class ExpensesService {
     private final ExpensesRepository repository;
     private final CustomerClient customerClient;
     private final CreditCardClient creditCardClient;
-    private final AccountClient accountClient;
     private final KafkaTemplate<String, PaymentSuccessfulEvent> paymentSuccessfulEventKafkaTemplate;
 
     @Transactional
@@ -42,7 +41,7 @@ public class ExpensesService {
         BigDecimal balance = creditCardResponse.balance() != null ? creditCardResponse.balance() : BigDecimal.ZERO;
         BigDecimal debt = creditCardResponse.debt() != null ? creditCardResponse.debt() : BigDecimal.ZERO;
 
-        // check if clients are fetching correct responses
+
         System.out.println("Card Number : " + creditCardResponse.cardNumber());
         System.out.println("Input card Number : " + request.cardNumber());
         System.out.println("Available Balance: " + balance);

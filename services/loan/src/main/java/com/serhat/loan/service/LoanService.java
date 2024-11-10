@@ -108,7 +108,7 @@ public class LoanService {
 
         BigDecimal monthlyPayment = loan.getMonthlyPayment();
 
-        if (request.amount().compareTo(monthlyPayment) < 0) {
+        if (request.amount().compareTo(monthlyPayment) != 0) {
             throw new RuntimeException("Monthly Payment is: " + monthlyPayment + ", not: " + request.amount());
         }
         if (loan.getInstallmentLeft() <= 0) {
@@ -119,7 +119,6 @@ public class LoanService {
             throw new RuntimeException("Insufficient balance for loan installment payment.");
         }
 
-        // Deduct from debt and update installments
         BigDecimal totalDebt = loan.getDebtLeft();
         BigDecimal debtLeft = totalDebt.subtract(request.amount());
         loan.setDebtLeft(debtLeft);

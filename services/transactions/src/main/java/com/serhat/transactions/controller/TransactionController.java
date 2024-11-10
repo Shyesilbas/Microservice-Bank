@@ -17,10 +17,18 @@ public class TransactionController {
 
     @PostMapping("/cardDebtPayment")
     public ResponseEntity<CardDebtPaymentResponse> updateTransactionHistoryAfterCardDebtPayment(@RequestBody CardDebtPaymentRequest request){
-        return ResponseEntity.ok(service.updateTransactionHistory(request));
+        return ResponseEntity.ok(service.updateTransactionHistoryAfterCardDebtPayment(request));
     }
 
+    @PostMapping("/loanInstallmentPayment")
+    public ResponseEntity<LoanInstallmentPaymentResponse> updateTransactionHistory(@RequestBody LoanInstallmentPayRequest request){
+        return ResponseEntity.ok(service.updateTransactionHistoryAfterLoanInstallmentPayment(request));
+    }
 
+    @PostMapping("/loanTotalPayment")
+    public ResponseEntity<payTotalLoanDebtResponse> updateTransactionHistory(@RequestBody payTotalLoanDebtRequest request){
+        return ResponseEntity.ok(service.updateTransactionHistoryAfterPayTotalLoanDebt(request));
+    }
     @PostMapping("/deposit")
     public ResponseEntity<DepositResponse> deposit(@RequestBody DepositRequest request){
         return ResponseEntity.ok(service.deposit(request));
@@ -28,7 +36,7 @@ public class TransactionController {
 
     @PostMapping("/loan")
     public ResponseEntity<LoanResponse> loan(@RequestBody LoanRequest request){
-        return ResponseEntity.ok(service.loan(request));
+        return ResponseEntity.ok(service.updateTransactionHistoryAfterLoanApplication(request));
     }
 
     @PostMapping("/withdraw")
@@ -36,15 +44,6 @@ public class TransactionController {
         return ResponseEntity.ok(service.withdraw(request));
     }
 
-    @PostMapping("/loanPayment")
-    public ResponseEntity<LoanInstallmentPaymentResponse> loanPayment(@RequestBody LoanPaymentRequest request){
-        return ResponseEntity.ok(service.payLoanInstallment(request));
-    }
-
-    @PostMapping("/loanTotalPayment")
-    public ResponseEntity<payTotalLoanDebtResponse> loanTotalPayment(@RequestBody payTotalLoanDebtRequest request){
-        return ResponseEntity.ok(service.payTotalLoanDebt(request));
-    }
 
     @PostMapping("/transfer")
     public ResponseEntity<TransferResponse> transfer(@RequestBody TransferRequest request){
