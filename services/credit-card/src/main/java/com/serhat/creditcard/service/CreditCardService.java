@@ -61,14 +61,14 @@ public class CreditCardService {
                 .build();
 
         repository.save(creditCard);
-        customerClient.updateLinkedCreditCards(customerResponse.id(),creditCard.getId());
-        accountClient.updateLinkedCreditCards(accountResponse.id(),creditCard.getId());
+       // customerClient.updateLinkedCreditCards(customerResponse.id(),creditCard.getId());
+      //  accountClient.updateLinkedCreditCards(accountResponse.id(),creditCard.getId());
         CardCreatedEvent cardCreatedEvent = new CardCreatedEvent(
                 creditCard.getId(),
                 Status.SUCCESSFUL,
                 customerResponse.id(),
-                creditCard.getCardNumber(),
                 request.linkedAccountNumber(),
+                creditCard.getCardNumber(),
                 request.limit(),
                 request.cardType()
         );
