@@ -62,6 +62,22 @@ public class TransactionService {
                 .toList();
     }
 
+    public List<TransactionHistory> transactionHistories(String accountNumber){
+       return repository.findAllTransactions(accountNumber)
+                .stream()
+                .map(transaction -> new TransactionHistory(
+                        transaction.getTransactionDate(),
+                        transaction.getSenderCustomerId(),
+                        transaction.getReceiverCustomerId(),
+                        transaction.getSenderAccountNumber(),
+                        transaction.getReceiverAccountNumber(),
+                        transaction.getAmount(),
+                        transaction.getDescription(),
+                        transaction.getTransactionType()
+                ))
+                .toList();
+    }
+
 
     @Transactional
     public DepositResponse deposit(DepositRequest request) {
@@ -277,69 +293,6 @@ public class TransactionService {
         }
     }
 
-    @Transactional
-    public DebtPaymentResponse payCardDebt(DebtPaymentRequest request) {
-        CreditCardResponse creditCardResponse = creditCardClient.findCardByCardNumber(request.cardNumber());
-        AccountResponse accountResponse = accountClient.findByAccountNumber(request.accountNumber());
-        CustomerResponse customerResponse = customerClient.findCustomerById(request.customerId());
-
-        if (creditCardResponse == null) {
-            throw new RuntimeException("Card Not Found.");
-        }
-        if (accountResponse == null) {
-            throw new RuntimeException("Account Not Found.");
-        }
-        if(request.amount().compareTo(accountResponse.balance())>0){
-            throw new RuntimeException("Insufficient Balance At Account!");
-        }
-
-        BigDecimal debt = creditCardResponse.debt() != null ? creditCardResponse.debt() : BigDecimal.ZERO;
-        System.out.println("Total Card Debt : "+debt);
-        BigDecimal balance = creditCardResponse.balance() != null ? creditCardResponse.balance() : BigDecimal.ZERO;
-        System.out.println("Total Card Balance : "+balance);
-
-
-        if (request.amount().compareTo(debt) > 0) {
-            throw new RuntimeException("Payment Amount cannot be higher than the total debt .");
-        }
-
-        Transaction transaction = Transaction.builder()
-                .senderCustomerId(String.valueOf(request.customerId()))
-                .receiverCustomerId("Bank")
-                .senderAccountNumber(request.accountNumber())
-                .receiverAccountNumber("Bank")
-                .description(request.description())
-                .amount(request.amount())
-                .status(Status.SUCCESSFUL)
-                .transactionType(TransactionType.TRANSFER)
-                .transactionDate(LocalDateTime.now())
-                .build();
-
-        repository.save(transaction);
-
-        BigDecimal updatedDebt = debt.subtract(request.amount());
-        System.out.println("Updated Card Debt : "+updatedDebt);
-        BigDecimal updatedBalance = balance.add(request.amount());
-        System.out.println("Updated Card Balance : "+updatedBalance);
-
-        creditCardClient.updateDebtAndBalanceAfterProcess(request.cardNumber(), updatedDebt, updatedBalance);
-
-
-        BigDecimal accountBalance = accountResponse.balance();
-        System.out.println("Account Balance : "+accountBalance);
-        BigDecimal updatedAccountBalance = accountResponse.balance().subtract(request.amount());
-        System.out.println("Updated Account Balance After Card debt payment: "+updatedAccountBalance);
-        accountClient.updateBalanceAfterCardDebtPayment(request.accountNumber(), updatedAccountBalance);
-
-        return new DebtPaymentResponse(
-                customerResponse.id(),
-                request.accountNumber(),
-                request.cardNumber(),
-                request.amount(),
-                updatedDebt,
-                updatedBalance
-        );
-    }
 
     @Transactional
     public LoanResponse loan(LoanRequest request) {
@@ -436,5 +389,35 @@ public class TransactionService {
                 request.amount(),
                 LoanStatus.FULLY_PAID
         );
+    }
+
+    public CardDebtPaymentResponse updateTransactionHistory(CardDebtPaymentRequest request) {
+        CreditCardResponse creditCardResponse = creditCardClient.findCardByCardNumber(request.cardNumber());
+        CustomerResponse customerResponse = customerClient.findCustomerById(request.customerId());
+        if(creditCardResponse == null) {
+            throw new RuntimeException("Card Not Found");
+        }
+            Transaction transaction = Transaction.builder()
+                    .senderCustomerId(String.valueOf(request.customerId()))
+                    .receiverCustomerId("Bank")
+                    .senderAccountNumber(request.accountNumber())
+                    .receiverAccountNumber("Bank")
+                    .description(request.description())
+                    .amount(request.amount())
+                    .status(Status.SUCCESSFUL)
+                    .transactionType(TransactionType.CARD_DEBT_PAYMENT)
+                    .transactionDate(LocalDateTime.now())
+                    .build();
+
+            repository.save(transaction);
+
+            return new CardDebtPaymentResponse(
+                    customerResponse.id(),
+                    request.accountNumber(),
+                    request.cardNumber(),
+                    request.amount(),
+                    creditCardResponse.debt(),
+                    creditCardResponse.balance()
+            );
     }
 }

@@ -1,5 +1,7 @@
 package com.serhat.creditcard.controller;
 
+import com.serhat.creditcard.dto.CardDebtPaymentRequest;
+import com.serhat.creditcard.dto.CardDebtPaymentResponse;
 import com.serhat.creditcard.dto.CreditCardRequest;
 import com.serhat.creditcard.dto.CreditCardResponse;
 import com.serhat.creditcard.service.CreditCardService;
@@ -54,6 +56,10 @@ public class CreditCardController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/payCardDebt")
+    public ResponseEntity<CardDebtPaymentResponse> payCardDebt(@RequestBody CardDebtPaymentRequest request){
+        return ResponseEntity.ok(creditCardService.payCardDebt(request));
+    }
 
 
 }

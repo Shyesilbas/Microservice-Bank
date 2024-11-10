@@ -27,6 +27,7 @@ public class AccountService {
     private final AccountRepository repository;
     private final CustomerClient customerClient;
     private final LoanClient loanClient;
+    private final TransactionClient transactionClient;
     private final AccountMapper mapper;
     private final KafkaTemplate<String, AccountCreatedEvent> kafkaTemplate;
 
@@ -237,5 +238,10 @@ public class AccountService {
                 LoanStatus.FULLY_PAID
         );
     }
+
+
+
+
+
 
 }
