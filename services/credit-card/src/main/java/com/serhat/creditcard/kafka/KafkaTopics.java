@@ -15,5 +15,11 @@ public class KafkaTopics {
                 .name("Card-created")
                 .build();
     }
+    @Bean
+    public NewTopic cardDebtPayed(){
+        return TopicBuilder
+                .name("CardDebtPayed")
+                .build();
+    }
 
 }

@@ -86,4 +86,4 @@ resilience4j:
             trusted:
               packages: "com.serhat.creditcard.kafka"
             value:
-              default.type: "com.serhat.creditcard.kafka.CardCreatedEvent"
+              default.type: "*"

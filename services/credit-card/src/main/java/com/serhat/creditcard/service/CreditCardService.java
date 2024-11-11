@@ -12,6 +12,7 @@ import com.serhat.creditcard.exception.CardNotFoundException;
 import com.serhat.creditcard.exception.InsufficientBalanceException;
 import com.serhat.creditcard.exception.PaymentRequestMismatchException;
 import com.serhat.creditcard.kafka.CardCreatedEvent;
+import com.serhat.creditcard.kafka.PayedCardDebtEvent;
 import com.serhat.creditcard.kafka.Status;
 import com.serhat.creditcard.repository.CreditCardRepository;
 import lombok.RequiredArgsConstructor;
@@ -32,8 +33,8 @@ public class CreditCardService {
     private final CreditCardRepository repository;
     private final CustomerClient customerClient;
     private final AccountClient accountClient;
-    private final TransactionClient transactionClient;
     private final KafkaTemplate<String, CardCreatedEvent> kafkaTemplateForCardCreated;
+    private final KafkaTemplate<String,PayedCardDebtEvent> payedCardDebtEventKafkaTemplate;
     public CreditCardResponse createCreditCard(CreditCardRequest request){
         CustomerResponse customerResponse = customerClient.findCustomerById(request.customerId());
         AccountResponse accountResponse = accountClient.findByAccountNumber(request.linkedAccountNumber());
@@ -188,8 +189,18 @@ public class CreditCardService {
         System.out.println("Account Balance : "+accountBalance);
         BigDecimal updatedAccountBalance = accountResponse.balance().subtract(request.amount());
         System.out.println("Updated Account Balance After Card debt payment: "+updatedAccountBalance);
-        accountClient.updateBalanceAfterCardDebtPayment(request.accountNumber(), updatedAccountBalance);
-        transactionClient.updateTransactionHistoryAfterCardDebtPayment(request);
+        PayedCardDebtEvent payedCardDebtEvent = new PayedCardDebtEvent(
+                customerResponse.id(),
+                request.accountNumber(),
+                request.cardNumber(),
+                request.description(),
+                request.amount(),
+                updatedDebt,
+                updatedBalance
+        );
+        log.info("Kafka Topic Sending For PayCardDebtTopic - Started");
+        payedCardDebtEventKafkaTemplate.send("PayCardDebt",payedCardDebtEvent);
+        log.info("Kafka Topic Sent Successfully to topic PayCardDebt -END");
 
         return new CardDebtPaymentResponse(
                 customerResponse.id(),
