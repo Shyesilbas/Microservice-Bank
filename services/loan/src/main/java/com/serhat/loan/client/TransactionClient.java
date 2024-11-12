@@ -1,6 +1,7 @@
 package com.serhat.loan.client;
 
 import com.serhat.loan.dto.*;
+import com.serhat.loan.kafka.LoanApplicationEvent;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -10,6 +11,9 @@ public interface TransactionClient {
 
     @PostMapping("/loan")
     LoanResponse updateTransactionsAfterLoan(@RequestBody LoanRequest request);
+
+    @PostMapping("/loan")
+    LoanApplicationEvent updateTransactionsAfterLoan(@RequestBody LoanApplicationEvent event);
 
 
     @PostMapping("/loanInstallmentPayment")

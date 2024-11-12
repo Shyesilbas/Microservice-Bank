@@ -7,7 +7,10 @@ import com.serhat.loan.dto.*;
 import com.serhat.loan.entity.ApplicationStatus;
 import com.serhat.loan.entity.Loan;
 import com.serhat.loan.exception.*;
+import com.serhat.loan.kafka.LoanApplicationEvent;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,10 +20,12 @@ import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class LoanService {
     private final LoanRepository repository;
     private final AccountClient accountClient;
     private final TransactionClient transactionClient;
+    private final KafkaTemplate<String, LoanApplicationEvent> loanApplicationEventKafkaTemplate;
 
     @Transactional
     public LoanResponse applyToLoan(LoanRequest request) {
@@ -56,9 +61,19 @@ public class LoanService {
                 .loanType(request.loanType())
                 .build();
 
-        accountClient.updateBalanceAfterLoanApplication(request);
-        transactionClient.updateTransactionsAfterLoan(request);
         repository.save(loan);
+        log.info("Kafka Message Sending to Topic Loan-application   -> STARTED");
+        LoanApplicationEvent loanApplicationEvent = new LoanApplicationEvent(
+                request.customerId(),
+                request.amount(),
+                request.accountNumber(),
+                request.installment(),
+                request.description(),
+                request.loanType(),
+                request.paymentDay()
+        );
+        loanApplicationEventKafkaTemplate.send("Loan-application",loanApplicationEvent);
+        log.info("Kafka Message Send successfully to topic Loan-application -> END");
 
         return new LoanResponse(
                 request.customerId(),

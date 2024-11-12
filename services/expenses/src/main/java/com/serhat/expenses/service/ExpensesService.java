@@ -71,11 +71,6 @@ public class ExpensesService {
         }
 
 
-        BigDecimal updatedCardDebt = debt.add(amountForProcess);
-        BigDecimal updatedCardBalance = balance.subtract(amountForProcess);
-
-     //   creditCardClient.updateDebtAndBalanceAfterProcess(request.cardNumber(), updatedCardDebt, updatedCardBalance);
-
         Expenses expense = Expenses.builder()
                 .cardNumber(request.cardNumber())
                 .customerId(Integer.valueOf(customer.id()))
