@@ -34,8 +34,7 @@ public class CustomerController {
   //  @ApiResponse(responseCode = "200",description = "Accounts Found Successfully")
     @GetMapping("/accounts/{customerId}")
     public ResponseEntity<List<AccountResponse>> findAccountsByCustomerId(@PathVariable Integer customerId) {
-        List<AccountResponse> accounts = service.findAccountsByCustomerId(customerId);
-        return ResponseEntity.ok(accounts);
+       return service.findAccountsByCustomerId(customerId);
     }
 
 //    @Operation(summary = "Update related credit card count for a customer")
@@ -72,8 +71,7 @@ public class CustomerController {
 //    @ApiResponse(responseCode = "200", description = "Customer Fetched Successfully")
     @GetMapping("/{customerId}")
     public ResponseEntity<CustomerResponse> getCustomerById(@PathVariable Integer customerId) {
-        CustomerResponse customerResponse = service.findByCustomerId(customerId);
-        return ResponseEntity.ok(customerResponse);
+        return service.findByCustomerId(customerId);
     }
 
 

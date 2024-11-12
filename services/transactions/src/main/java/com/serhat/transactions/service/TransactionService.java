@@ -13,6 +13,7 @@ import com.serhat.transactions.kafka.WithdrawalEvent;
 import com.serhat.transactions.notification.MailService;
 import com.serhat.transactions.repository.TransactionRepository;
 import feign.FeignException;
+import jakarta.ws.rs.ServiceUnavailableException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -160,12 +161,12 @@ public class TransactionService {
         try {
             CustomerResponse receiverCustomer = customerClient.findCustomerById(Integer.valueOf(request.receiverCustomerId()));
             if (receiverCustomer == null) {
-                throw new CustomerNotFoundException("Customer Not found");
+                throw new CustomerNotFoundException("Customer Not found with ID: " + request.receiverCustomerId());
             }
 
             AccountResponse senderResponse = accountClient.findByAccountNumber(request.senderAccountNumber());
             if (senderResponse == null) {
-                throw new AccountNotFoundException("Account Not found");
+                throw new AccountNotFoundException("Account Not found for account number: " + request.senderAccountNumber());
             }
 
             List<AccountResponse> accountResponse = customerClient.findAccountsByCustomerId(Integer.valueOf(request.receiverCustomerId()));
@@ -174,14 +175,14 @@ public class TransactionService {
             }
 
             if (!senderResponse.customer().id().equals(request.receiverCustomerId())) {
-                throw new AccountAndCustomerIdMissmatchException("Account does not belong to the specified customer");
+                throw new AccountAndCustomerIdMissmatchException("Account with number " + request.senderAccountNumber() + " does not belong to the specified customer with ID: " + request.receiverCustomerId());
             }
 
             if (senderResponse.balance().compareTo(request.amount()) < 0) {
-                throw new InsufficientBalanceException("Insufficient Balance!");
+                throw new InsufficientBalanceException("Insufficient Balance! Current balance: " + senderResponse.balance() + ", Requested withdrawal: " + request.amount());
             }
             if (request.amount().compareTo(BigDecimal.ZERO) < 0) {
-                throw new IllegalAmountException("Amount cannot be negative!");
+                throw new IllegalAmountException("Amount cannot be negative! Provided amount: " + request.amount());
             }
 
             Transaction transaction = Transaction.builder()
@@ -207,7 +208,7 @@ public class TransactionService {
             ));
 
             repository.save(transaction);
-            log.info("Transaction Type: " + transaction.getTransactionType() + " State: " + transaction.getStatus());
+            log.info("Transaction Type: {} | State: {}", transaction.getTransactionType(), transaction.getStatus());
             log.info("Kafka Message sending for the Withdrawal ...");
 
             WithdrawalEvent withdrawalEvent = new WithdrawalEvent(transaction.getTransactionId(), transaction.getStatus());
@@ -236,18 +237,23 @@ public class TransactionService {
             );
 
         } catch (FeignException.NotFound e) {
-            if(e.request().url().equals("customers")) {
-                throw new CustomerNotFoundException("Customer Not Found For id : "+request.receiverCustomerId());
-            }else{
-                throw new AccountNotFoundException("Account Not Found FOR account number : "+request.senderAccountNumber());
+            log.error("FeignException NotFound occurred. URL: {} | Status: {} | Message: {}",
+                    e.request().url(), e.status(), e.getMessage());
+
+             if (e.request().url().contains("customers")) {
+                throw new CustomerNotFoundException("Customer not found for ID: " + request.receiverCustomerId());
+            } else {
+                throw new RuntimeException("Unknown FeignException error: " + e.getMessage(), e);
             }
-        } catch ( CustomerHasNoAccountsException | AccountAndCustomerIdMissmatchException e) {
-            log.error("Error occurred: {}", e.getMessage());
+        } catch ( AccountAndCustomerIdMissmatchException |
+                 InsufficientBalanceException | IllegalAmountException e) {
+            log.error("Business logic error occurred: {}", e.getMessage(), e);
             throw e;
         } catch (Exception e) {
-            log.error("An unexpected error occurred: {}", e.getMessage());
+            log.error("An unexpected error occurred: {}", e.getMessage(), e);
             throw new RuntimeException("Unexpected error occurred: " + e.getMessage(), e);
         }
+
     }
 
 

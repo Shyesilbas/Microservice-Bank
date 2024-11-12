@@ -14,6 +14,7 @@ import com.serhat.bank.model.Customer;
 import com.serhat.bank.repository.CustomerRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 
@@ -94,10 +95,10 @@ public class CustomerService {
         return this.repository.existsById(id);
     }
 
-    public CustomerResponse findByCustomerId(Integer customerId) {
+    public ResponseEntity<CustomerResponse> findByCustomerId(Integer customerId) {
         Customer customer = repository.findById(customerId)
-                .orElseThrow(() -> new CustomerNotFoundException("Customer Not found"));
-        return mapper.customerData(customer);
+                .orElseThrow(() -> new CustomerNotFoundException("Customer Not found For id : "+customerId));
+        return ResponseEntity.ok(mapper.customerData(customer));
     }
 
     public String deleteCustomer(Integer id){
@@ -108,14 +109,13 @@ public class CustomerService {
         throw new RuntimeException("Customer Not found for Id : "+id);
     }
 
-    public List<AccountResponse> findAccountsByCustomerId(Integer customerId) {
+    public ResponseEntity<List<AccountResponse>> findAccountsByCustomerId(Integer customerId) {
         List<AccountResponse> accounts = accountClient.findAccountsByCustomerId(customerId);
 
         if (accounts == null || accounts.isEmpty()) {
             throw new CustomerHasNoAccountsException("Customer with ID " + customerId + " has no accounts.");
         }
-
-        return accounts;
+        return ResponseEntity.ok(accounts);
     }
 
 
