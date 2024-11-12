@@ -3,7 +3,7 @@ package com.serhat.expenses.dto;
 import java.math.BigDecimal;
 
 public record CreditCardResponse(
-        String customerId,
+        Integer customerId,
         String customerName,
         String customerSurname,
         String cardNumber,

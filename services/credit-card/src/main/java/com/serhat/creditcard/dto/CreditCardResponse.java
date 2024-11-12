@@ -7,6 +7,7 @@ import com.serhat.creditcard.entity.PaymentDay;
 import java.math.BigDecimal;
 
 public record CreditCardResponse(
+        String customerId,
         String customerName,
         String customerSurname,
         BigDecimal limit,

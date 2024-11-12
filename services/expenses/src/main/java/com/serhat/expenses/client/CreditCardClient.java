@@ -1,6 +1,7 @@
 package com.serhat.expenses.client;
 
 import com.serhat.expenses.dto.CreditCardResponse;
+import com.serhat.expenses.kafka.PaymentSuccessfulEvent;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,7 +20,6 @@ public interface CreditCardClient {
             @RequestParam BigDecimal updatedDebt,
             @RequestParam BigDecimal updatedBalance
     );
-
 
 
 }

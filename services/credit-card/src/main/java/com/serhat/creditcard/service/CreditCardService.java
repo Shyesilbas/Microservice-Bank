@@ -80,6 +80,7 @@ public class CreditCardService {
 
 
         return new CreditCardResponse(
+                customerResponse.id(),
                 customerResponse.name(),
                 customerResponse.surname(),
                 request.limit(),
@@ -126,6 +127,7 @@ public class CreditCardService {
 
         // Map the credit card and customer details to a response DTO
         return new CreditCardResponse(
+                customerResponse.id(),
                 customerResponse.name(),
                 customerResponse.surname(),
                 creditCard.getCardLimit(),

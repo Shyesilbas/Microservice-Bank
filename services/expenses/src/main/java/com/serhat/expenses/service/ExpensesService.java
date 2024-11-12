@@ -37,6 +37,9 @@ public class ExpensesService {
     public ProcessResponse doPayment(ProcessRequest request) {
         CreditCardResponse creditCardResponse = creditCardClient.findCardByCardNumber(request.cardNumber());
         CustomerResponse customer = customerClient.findCustomerById(request.customerId());
+        log.info("Credit Card Holder Name : "+creditCardResponse.customerName());
+        log.info("Credit Card Holder Id From Credit Card Response : "+creditCardResponse.customerId());
+        log.info("Credit Card Holder Id : "+request.customerId());
 
         if (creditCardResponse == null) {
             throw new CreditCardNotFoundException("Credit Card not found.");
@@ -44,6 +47,10 @@ public class ExpensesService {
         if(customer == null){
             throw new CustomerNotFoundException("Customer Not Found");
         }
+        if(!creditCardResponse.customerId().equals(request.customerId())){
+            throw new RuntimeException("Credit Card Holder id is wrong");
+        }
+
 
         BigDecimal balance = creditCardResponse.balance() != null ? creditCardResponse.balance() : BigDecimal.ZERO;
         BigDecimal debt = creditCardResponse.debt() != null ? creditCardResponse.debt() : BigDecimal.ZERO;
@@ -67,7 +74,7 @@ public class ExpensesService {
         BigDecimal updatedCardDebt = debt.add(amountForProcess);
         BigDecimal updatedCardBalance = balance.subtract(amountForProcess);
 
-        creditCardClient.updateDebtAndBalanceAfterProcess(request.cardNumber(), updatedCardDebt, updatedCardBalance);
+     //   creditCardClient.updateDebtAndBalanceAfterProcess(request.cardNumber(), updatedCardDebt, updatedCardBalance);
 
         Expenses expense = Expenses.builder()
                 .cardNumber(request.cardNumber())
@@ -81,7 +88,7 @@ public class ExpensesService {
 
         repository.save(expense);
         log.info("Message Sending to topic Payment-successful -> Started ...");
-        PaymentSuccessfulEvent paymentSuccessfulEvent = new PaymentSuccessfulEvent(expense.getId(), Status.SUCCESSFUL);
+        PaymentSuccessfulEvent paymentSuccessfulEvent = new PaymentSuccessfulEvent(creditCardResponse.cardNumber(),expense.getId(),request.amount() ,Status.SUCCESSFUL);
         paymentSuccessfulEventKafkaTemplate.send("Payment-successful", paymentSuccessfulEvent);
         log.info("Message Successfully Send for topic : Payment-successful -> End");
 
