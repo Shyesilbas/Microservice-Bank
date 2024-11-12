@@ -6,5 +6,7 @@ import lombok.Getter;
 @AllArgsConstructor
 @Getter
 public class InsufficientBalanceException extends RuntimeException {
-    private final String errorMessage;
+    public InsufficientBalanceException(String message) {
+        super(message);
+    }
 }

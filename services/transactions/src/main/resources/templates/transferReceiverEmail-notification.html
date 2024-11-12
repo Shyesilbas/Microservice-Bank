@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>Transfer Notification</title>
+</head>
+<body>
+<h2>Dear <span th:text="${customerName}">Customer Name</span>,</h2>
+
+<p><strong th:text="${amount}">Amount</strong> <strong th:text="${currency}">Currency</strong> has been sent to your account <strong th:text="${accountNumberReceiver}">Receiver Account Number</strong> and has been successfully processed.</p>
+
+<p>Your updated balance is <strong th:text="${updatedBalance}">Updated Balance</strong> <strong th:text="${currency}">Currency</strong>.</p>
+
+<p>Thank you for using our service!</p>
+
+<br>
+<p>Best regards,</p>
+<p>The Bank Team</p>
+</body>
+</html>

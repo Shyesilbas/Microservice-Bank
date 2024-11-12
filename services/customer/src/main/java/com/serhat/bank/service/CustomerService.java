@@ -6,6 +6,8 @@ import com.serhat.bank.client.AccountClient;
 import com.serhat.bank.client.AccountResponse;
 import com.serhat.bank.dto.CustomerRequest;
 import com.serhat.bank.dto.CustomerResponse;
+import com.serhat.bank.exception.CustomerHasNoAccountsException;
+import com.serhat.bank.exception.CustomerNotFoundException;
 import com.serhat.bank.kafka.CustomerCreatedEvent;
 import com.serhat.bank.kafka.Status;
 import com.serhat.bank.model.Customer;
@@ -94,7 +96,7 @@ public class CustomerService {
 
     public CustomerResponse findByCustomerId(Integer customerId) {
         Customer customer = repository.findById(customerId)
-                .orElseThrow(() -> new RuntimeException("Customer Not found"));
+                .orElseThrow(() -> new CustomerNotFoundException("Customer Not found"));
         return mapper.customerData(customer);
     }
 
@@ -106,9 +108,15 @@ public class CustomerService {
         throw new RuntimeException("Customer Not found for Id : "+id);
     }
 
-public List<AccountResponse> findAccountsByCustomerId(Integer customerId){
-        return accountClient.findAccountsByCustomerId(customerId);
-}
+    public List<AccountResponse> findAccountsByCustomerId(Integer customerId) {
+        List<AccountResponse> accounts = accountClient.findAccountsByCustomerId(customerId);
+
+        if (accounts == null || accounts.isEmpty()) {
+            throw new CustomerHasNoAccountsException("Customer with ID " + customerId + " has no accounts.");
+        }
+
+        return accounts;
+    }
 
 
 }

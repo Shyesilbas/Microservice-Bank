@@ -5,9 +5,8 @@ import lombok.Getter;
 
 @AllArgsConstructor
 @Getter
-public class AccountNotFoundException extends RuntimeException {
-    public AccountNotFoundException(String message) {
+public class CustomerHasNoAccountsException extends RuntimeException {
+    public CustomerHasNoAccountsException(String message) {
         super(message);
     }
-
 }

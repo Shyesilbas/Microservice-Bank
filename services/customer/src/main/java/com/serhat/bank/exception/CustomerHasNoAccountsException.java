@@ -1,4 +1,4 @@
-package com.serhat.transactions.exception;
+package com.serhat.bank.exception;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -6,7 +6,7 @@ import lombok.Getter;
 @AllArgsConstructor
 @Getter
 public class CustomerHasNoAccountsException extends RuntimeException {
-   public CustomerHasNoAccountsException(String message) {
-      super(message);
+   public CustomerHasNoAccountsException(String message){
+       super(message);
    }
 }

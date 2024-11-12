@@ -35,9 +35,6 @@ public class CustomerController {
     @GetMapping("/accounts/{customerId}")
     public ResponseEntity<List<AccountResponse>> findAccountsByCustomerId(@PathVariable Integer customerId) {
         List<AccountResponse> accounts = service.findAccountsByCustomerId(customerId);
-        if (accounts.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
         return ResponseEntity.ok(accounts);
     }
 

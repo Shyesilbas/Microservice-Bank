@@ -6,5 +6,7 @@ import lombok.Getter;
 @AllArgsConstructor
 @Getter
 public class AccountAndCustomerIdMissmatchException extends RuntimeException {
-   private final String errorMessage;
+   public AccountAndCustomerIdMissmatchException(String message) {
+      super(message);
+   }
 }

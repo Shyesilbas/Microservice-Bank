@@ -10,8 +10,8 @@ import org.slf4j.LoggerFactory;
 @Getter
 
 public class CustomerNotFoundException extends RuntimeException{
-    private final String errorMessage;
-
-
+    public CustomerNotFoundException(String message) {
+        super(message);
+    }
 
 }

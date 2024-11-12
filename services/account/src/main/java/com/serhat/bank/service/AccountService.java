@@ -3,12 +3,14 @@ package com.serhat.bank.service;
 import com.serhat.bank.client.*;
 import com.serhat.bank.dto.*;
 import com.serhat.bank.exception.AccountNotFoundException;
+import com.serhat.bank.exception.CustomerHasNoAccountsException;
 import com.serhat.bank.exception.CustomerNotFoundException;
 import com.serhat.bank.exception.InsufficientBalanceException;
 import com.serhat.bank.kafka.AccountCreatedEvent;
 import com.serhat.bank.kafka.Status;
 import com.serhat.bank.model.Account;
 import com.serhat.bank.repository.AccountRepository;
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
@@ -33,31 +35,40 @@ public class AccountService {
     private final KafkaTemplate<String, AccountCreatedEvent> kafkaTemplate;
 
     public AccountResponse createAccount(AccountRequest request) {
+        try {
+            CustomerResponse customer = customerClient.findCustomerById(request.customerId());
 
-        CustomerResponse customer = customerClient.findCustomerById(request.customerId());
-        if (customer == null) {
+            if (customer == null) {
+                throw new CustomerNotFoundException("Customer not found for ID: " + request.customerId());
+            }
+
+            Account account = mapper.mapToAccount(request);
+            Account savedAccount = repository.save(account);
+            AccountCreatedEvent accountCreatedEvent = new AccountCreatedEvent(account.getAccountNumber(), Status.CREATED);
+            customerClient.updateRelatedAccount(String.valueOf(request.customerId()), account.getId());
+
+            log.info("Account created successfully");
+            log.info("Kafka Topic sending for The Account Creation -- Started");
+            kafkaTemplate.send("Account-created", accountCreatedEvent);
+            log.info("Kafka Topic sending for The Account Creation -- End");
+
+            return new AccountResponse(
+                    savedAccount.getId(),
+                    savedAccount.getAccountNumber(),
+                    request.accountName(),
+                    request.currency(),
+                    request.accountType(),
+                    request.balance(),
+                    customer
+            );
+        } catch (FeignException.NotFound e) {
             throw new CustomerNotFoundException("Customer not found for ID: " + request.customerId());
+        } catch (Exception e) {
+            log.error("An unexpected error occurred: {}", e.getMessage());
+            throw new RuntimeException("An unexpected error occurred while creating the account.");
         }
-
-        Account account = mapper.mapToAccount(request);
-        Account savedAccount = repository.save(account);
-        AccountCreatedEvent accountCreatedEvent = new AccountCreatedEvent(account.getAccountNumber(), Status.CREATED);
-        customerClient.updateRelatedAccount(String.valueOf(request.customerId()), account.getId());
-
-        log.info("Account created successfully");
-        log.info("Kafka Topic sending for The Account Creation -- Started");
-        kafkaTemplate.send("Account-created", accountCreatedEvent);
-        log.info("Kafka Topic sending for The Account Creation -- End");
-        return new AccountResponse(
-                savedAccount.getId(),
-                savedAccount.getAccountNumber(),
-                request.accountName(),
-                request.currency(),
-                request.accountType(),
-                request.balance(),
-                customer
-        );
     }
+
 
     public ResponseForDebtPayment updateBalanceAfterCardDebtPayment(String accountNumber, BigDecimal updatedBalance) {
         Account account = repository.findByAccountNumber(Integer.parseInt(accountNumber))
@@ -117,13 +128,18 @@ public class AccountService {
 
     // For the CustomerId
     public List<AccountResponse> findAccountByCustomerId(Integer customerId) {
-        List<Account> accounts = repository.findByCustomerId(customerId);
-        if (accounts.isEmpty()) {
-            throw new RuntimeException("No accounts found for customer ID: " + customerId);
+        try {
+            List<Account> accounts = repository.findByCustomerId(customerId);
+            if (accounts.isEmpty()) {
+                throw new CustomerHasNoAccountsException("No accounts found for customer ID: " + customerId);
+            }
+            return accounts.stream()
+                    .map(mapper::accountData)
+                    .toList();
+        }catch (FeignException e){
+            log.error("Error fetching accounts for customer ID {}: {}", customerId, e.getMessage());
+            throw new RuntimeException("Failed to fetch accounts for customer ID " + customerId, e);
         }
-        return accounts.stream()
-                .map(mapper::accountData)
-                .toList();
     }
 
     public String deleteAccount(Integer id) {
@@ -135,7 +151,7 @@ public class AccountService {
     public AccountResponse findByAccountNumber(int accountNumber) {
         Optional<Account> account = repository.findByAccountNumber(accountNumber);
         if (account.isEmpty()) {
-            throw new RuntimeException("Account Not found");
+            throw new AccountNotFoundException("Account Not found");
         }
         return mapper.accountData(account.get());
     }
