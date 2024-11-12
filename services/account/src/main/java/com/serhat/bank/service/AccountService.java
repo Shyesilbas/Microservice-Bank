@@ -44,9 +44,7 @@ public class AccountService {
 
             Account account = mapper.mapToAccount(request);
             Account savedAccount = repository.save(account);
-            AccountCreatedEvent accountCreatedEvent = new AccountCreatedEvent(account.getAccountNumber(), Status.CREATED);
-            customerClient.updateRelatedAccount(String.valueOf(request.customerId()), account.getId());
-
+            AccountCreatedEvent accountCreatedEvent = new AccountCreatedEvent(customer.id(),account.getAccountNumber(), Status.CREATED);
             log.info("Account created successfully");
             log.info("Kafka Topic sending for The Account Creation -- Started");
             kafkaTemplate.send("Account-created", accountCreatedEvent);
@@ -138,7 +136,7 @@ public class AccountService {
                     .toList();
         }catch (FeignException e){
             log.error("Error fetching accounts for customer ID {}: {}", customerId, e.getMessage());
-            throw new RuntimeException("Failed to fetch accounts for customer ID " + customerId, e);
+            throw new CustomerHasNoAccountsException("Failed to fetch accounts for customer ID  ");
         }
     }
 

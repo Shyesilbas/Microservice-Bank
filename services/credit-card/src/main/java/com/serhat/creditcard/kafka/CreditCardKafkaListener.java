@@ -18,7 +18,6 @@ public class CreditCardKafkaListener {
     private final CustomerClient customerClient;
     private final AccountClient accountClient;
     private final TransactionClient transactionClient;
-    private final CreditCardRepository repository;
 
     @KafkaListener(topics = "Card-created", groupId = "card-service-group")
     public void listenerCardCreated(
@@ -60,8 +59,6 @@ public class CreditCardKafkaListener {
             String accountNumber = event.accountNumber();
             String cardNumber = event.cardNumber();
             String description = event.description();
-            BigDecimal amount = event.amount();
-            BigDecimal debtLeft = event.debtLeft();
             BigDecimal balance = event.balance();
 
             CustomerResponse customerResponse = customerClient.findCustomerById(customerId);
@@ -76,14 +73,7 @@ public class CreditCardKafkaListener {
                 return;
             }
 
-            CreditCard creditCard = repository.findByCardNumber(cardNumber)
-                    .orElseThrow(() -> new RuntimeException("Credit Card not found for Card Number: " + cardNumber));
-            creditCard.setDebt(debtLeft);
-            creditCard.setBalance(balance);
-            repository.save(creditCard);
-
             log.info("Successfully updated debt and balance for Credit Card: {}, with description: {}", cardNumber, description);
-
             accountClient.updateBalanceAfterCardDebtPayment(accountNumber, balance);
             transactionClient.updateTransactionHistoryAfterCardDebtPayment(event);
 

@@ -169,11 +169,6 @@ public class TransactionService {
                 throw new AccountNotFoundException("Account Not found for account number: " + request.senderAccountNumber());
             }
 
-            List<AccountResponse> accountResponse = customerClient.findAccountsByCustomerId(Integer.valueOf(request.receiverCustomerId()));
-            if (accountResponse == null || accountResponse.isEmpty()) {
-                throw new CustomerHasNoAccountsException("This customer has no active accounts.");
-            }
-
             if (!senderResponse.customer().id().equals(request.receiverCustomerId())) {
                 throw new AccountAndCustomerIdMissmatchException("Account with number " + request.senderAccountNumber() + " does not belong to the specified customer with ID: " + request.receiverCustomerId());
             }
@@ -237,14 +232,7 @@ public class TransactionService {
             );
 
         } catch (FeignException.NotFound e) {
-            log.error("FeignException NotFound occurred. URL: {} | Status: {} | Message: {}",
-                    e.request().url(), e.status(), e.getMessage());
-
-             if (e.request().url().contains("customers")) {
-                throw new CustomerNotFoundException("Customer not found for ID: " + request.receiverCustomerId());
-            } else {
-                throw new RuntimeException("Unknown FeignException error: " + e.getMessage(), e);
-            }
+          throw e;
         } catch ( AccountAndCustomerIdMissmatchException |
                  InsufficientBalanceException | IllegalAmountException e) {
             log.error("Business logic error occurred: {}", e.getMessage(), e);
