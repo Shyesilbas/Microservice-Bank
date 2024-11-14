@@ -16,7 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Configuration
-public class KafkaConfigs {
+public  class KafkaConfigs {
 
     @Bean
     public ProducerFactory<String, PaymentSuccessfulEvent> producerFactoryForPayment(){
