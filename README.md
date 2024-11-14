@@ -6,5 +6,7 @@ Bank Account Project with microservices
 -CircuitBreakers
 -JavaMailSender
 -Kafka
+-Swagger
+-Zipkin
 
 
