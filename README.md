@@ -1,9 +1,10 @@
 Bank Account Project with microservices
-Config Server
-Eureka
-Keycloak
-OpenFeign
-CircuitBreakers
-JavaMailSender
+-Config Server
+-Eureka
+-Keycloak
+-OpenFeign
+-CircuitBreakers
+-JavaMailSender
+-Kafka
 
 
