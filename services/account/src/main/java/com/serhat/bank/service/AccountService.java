@@ -14,6 +14,8 @@ import com.serhat.bank.repository.AccountRepository;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
@@ -35,6 +37,7 @@ public class AccountService {
     private final LoanClient loanClient;
     private final AccountMapper mapper;
     private final KafkaTemplate<String, AccountCreatedEvent> kafkaTemplate;
+    private final CacheManager cacheManager;
 
     public AccountResponse createAccount(AccountRequest request) {
         try {
@@ -93,8 +96,15 @@ public class AccountService {
     }
 
     // For the AccountId
-    @Cacheable(value = "accounts",key = "#id")
+    @Cacheable(value = "accounts", key = "'accounts::' + #id")
     public AccountResponse findById(Integer id) {
+        Cache cache = cacheManager.getCache("accounts");
+        if (cache != null && cache.get(id) != null) {
+            log.info("Cache hit for account id: {}", id);
+        } else {
+            log.info("Cache miss for account id: {} - Loading from database", id);
+        }
+
         Account account = repository.findById(id)
                 .orElseThrow(() -> new AccountNotFoundException("Account not found"));
         return mapper.accountData(account);
@@ -110,21 +120,6 @@ public class AccountService {
         CustomerResponse customer = customerClient.findCustomerById(Integer.valueOf(request.customerId()));
         return new DepositResponse(account.getAccountNumber(), request.description(), request.amount(), customer);
     }
-
-    /*
-    public TransferRequest updateBalancesAfterTransfer(TransferRequest request) throws AccountNotFoundException {
-        Account account = repository.findByAccountNumber(Integer.parseInt(request.accountNumber()))
-                .orElseThrow(() -> new AccountNotFoundException("Account not found"));
-
-        account.setBalance(account.getBalance().add(request.amount()));
-        repository.save(account);
-
-        CustomerResponse customer = customerClient.findCustomerById(Integer.valueOf(request.customerId()));
-        return new DepositResponse(account.getAccountNumber(), request.description(), request.amount(), customer);
-    }
-     */
-
-
 
 
     // For the CustomerId

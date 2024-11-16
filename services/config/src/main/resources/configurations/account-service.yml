@@ -60,3 +60,13 @@ resilience4j:
     producer:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+
+
+
+logging:
+  level:
+    org.springframework.cache: TRACE
+    org.springframework.data.redis: DEBUG
+    com.serhat.bank: DEBUG
+    io.lettuce.core: DEBUG
+
