@@ -6,6 +6,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.messaging.handler.annotation.Payload;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -14,11 +16,13 @@ import java.util.NoSuchElementException;
 @Service
 @Slf4j
 @RequiredArgsConstructor
+@EnableAsync
 public class CreditCardKafkaListener {
     private final CustomerClient customerClient;
     private final AccountClient accountClient;
     private final TransactionClient transactionClient;
 
+    @Async
     @KafkaListener(topics = "Card-created", groupId = "card-service-group")
     public void listenerCardCreated(
             @Payload CardCreatedEvent event) {
@@ -49,7 +53,7 @@ public class CreditCardKafkaListener {
             log.error("Error updating linked credit card", e);
         }
     }
-
+    @Async
     @KafkaListener(topics = "CardDebtPayed", groupId = "card-service-group")
     public void listenerPayCardDebt(@Payload PayedCardDebtEvent event) {
         log.info("Received Pay Card Debt event: {}", event);

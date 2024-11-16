@@ -6,6 +6,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.annotation.KafkaListeners;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
@@ -13,10 +15,12 @@ import java.math.BigDecimal;
 @Service
 @RequiredArgsConstructor
 @Slf4j
+@EnableAsync
 public class expensesKafkaListener {
     private final CreditCardClient creditCardClient;
 
 
+    @Async
     @KafkaListener(topics = "Payment-successful",groupId = "expense")
     public void paymentSuccessful(PaymentSuccessfulEvent event){
         log.info("Event Received : "+event);
