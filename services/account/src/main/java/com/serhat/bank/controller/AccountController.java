@@ -106,8 +106,7 @@ public class AccountController {
 //    @ApiResponse(responseCode = "200", description = "Account Fetched Successfully")
     @GetMapping("/{id}")
     public ResponseEntity<AccountResponse> getAccountById(@PathVariable Integer id) {
-        AccountResponse account = accountService.findById(id);
-        return ResponseEntity.ok(account);
+        return ResponseEntity.ok(accountService.findById(id));
     }
 //    @Operation(summary = "Delete an Account")
 //    @ApiResponse(responseCode = "200", description = "Account Deleted Successfully")

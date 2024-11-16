@@ -14,6 +14,7 @@ import com.serhat.bank.repository.AccountRepository;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -92,6 +93,7 @@ public class AccountService {
     }
 
     // For the AccountId
+    @Cacheable(value = "accounts",key = "#id")
     public AccountResponse findById(Integer id) {
         Account account = repository.findById(id)
                 .orElseThrow(() -> new AccountNotFoundException("Account not found"));

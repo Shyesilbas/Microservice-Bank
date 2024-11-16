@@ -27,7 +27,6 @@ public class RateLimitService {
     }
     public boolean tryConsume() {
         ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
-        log.warn("Rate Limit Exceeded");
         return probe.isConsumed();
     }
 
