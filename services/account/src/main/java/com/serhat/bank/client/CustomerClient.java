@@ -15,7 +15,7 @@ public interface CustomerClient {
     @CircuitBreaker(name = "customerServiceCircuitBreaker")
     CustomerResponse findCustomerById(@PathVariable Integer customerId);
 
-    @PostMapping("/account/{customerId}")
-    void updateRelatedAccount(@PathVariable String customerId , @RequestBody Integer accountId);
+    @PostMapping("/accounts/{customerId}")
+    void updateRelatedAccount(@PathVariable Integer customerId , @RequestBody Integer accountId);
 
 }

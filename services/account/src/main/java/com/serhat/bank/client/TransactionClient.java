@@ -1,6 +1,7 @@
 package com.serhat.bank.client;
 
 import com.serhat.bank.dto.TransactionHistory;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +15,7 @@ import java.util.List;
 public interface TransactionClient {
 
     @GetMapping("/transactionHistory/{accountNumber}")
+    @CircuitBreaker(name = "transactionCircuitBreaker")
     List<TransactionHistory> getTransactionHistory(@PathVariable String accountNumber);
 
 }

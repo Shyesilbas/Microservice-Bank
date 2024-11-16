@@ -1,5 +1,6 @@
 package com.serhat.transactions.exception;
 
+import feign.FeignException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -20,6 +21,8 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
     }
 
+
+
     @ExceptionHandler(CurrencyMismatchBetweenAccountsException.class)
     public ResponseEntity<ErrorResponse> handleCurrencyMismatchBetweenAccountsException(CurrencyMismatchBetweenAccountsException ex) {
         ErrorResponse errorResponse = new ErrorResponse(
@@ -34,10 +37,10 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleCustomerHasNoAccountsException(CustomerHasNoAccountsException ex) {
         ErrorResponse errorResponse = new ErrorResponse(
                 ex.getMessage(),
-                HttpStatus.NOT_FOUND.value(),
-                "NOT FOUND ERROR OCCURRED"
+                HttpStatus.BAD_REQUEST.value(),
+                "BAD REQUEST ERROR OCCURRED"
         );
-        return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
     }
     @ExceptionHandler(AccountAndCustomerIdMissmatchException.class)
     public ResponseEntity<ErrorResponse> handleAccountAndCustomerIdMissmatchException(AccountAndCustomerIdMissmatchException ex) {

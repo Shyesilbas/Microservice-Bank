@@ -1,6 +1,7 @@
 package com.serhat.transactions.client;
 
 import com.serhat.transactions.dto.*;
+import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 
