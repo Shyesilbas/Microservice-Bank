@@ -6,6 +6,7 @@ import com.serhat.bank.client.WithdrawRequest;
 import com.serhat.bank.client.WithdrawResponse;
 import com.serhat.bank.dto.*;
 import com.serhat.bank.model.Account;
+import com.serhat.bank.model.Currency;
 import com.serhat.bank.service.AccountService;
 //import io.swagger.v3.oas.annotations.Operation;
 //import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -122,6 +123,12 @@ public class AccountController {
     public ResponseEntity<List<AccountResponse>> getAccountsByCustomerId(@PathVariable Integer customerId) {
         return ResponseEntity.ok(accountService.findAccountByCustomerId(customerId));
     }
+
+     @GetMapping("/byCurrency/{customerId}/{currency}")
+    public ResponseEntity<List<AccountResponse>> findAccountsByCurrencyForSpecialCustomer(@PathVariable Integer customerId , @PathVariable Currency currency){
+        return ResponseEntity.ok(accountService.findAccountsByCurrencyForSpecialCustomer(customerId,currency));
+     }
+
 
 
 }

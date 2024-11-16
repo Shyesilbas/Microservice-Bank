@@ -1,6 +1,7 @@
 package com.serhat.bank.repository;
 
 import com.serhat.bank.model.Account;
+import com.serhat.bank.model.Currency;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -14,4 +15,6 @@ public interface AccountRepository extends JpaRepository<Account,Integer> {
     List<Account> findByCustomerId(Integer customerId);
 
     Optional<Account> findByAccountNumber(int accountNumber);
+
+    List<Account> findAccountByCurrencyAndCustomerId(Currency currency ,Integer customerId);
 }

@@ -4,6 +4,7 @@ package com.serhat.bank.service;
 
 import com.serhat.bank.client.AccountClient;
 import com.serhat.bank.client.AccountResponse;
+import com.serhat.bank.client.Currency;
 import com.serhat.bank.dto.CustomerRequest;
 import com.serhat.bank.dto.CustomerResponse;
 import com.serhat.bank.exception.CustomerHasNoAccountsException;
@@ -17,7 +18,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
-
 import java.util.List;
 
 @Service
@@ -54,6 +54,7 @@ public class CustomerService {
 
      return "Customer created Successfully! Name : "+request.name()+" Personal Id : "+request.personalId() + " Customer Id : "+savedCustomer.getId();
     }
+
 
     public void updateLinkedCreditCards(Integer customerId) {
 
@@ -117,6 +118,5 @@ public class CustomerService {
         }
         return ResponseEntity.ok(accounts);
     }
-
 
 }

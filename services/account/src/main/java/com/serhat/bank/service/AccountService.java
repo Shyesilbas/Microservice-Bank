@@ -9,6 +9,7 @@ import com.serhat.bank.exception.InsufficientBalanceException;
 import com.serhat.bank.kafka.AccountCreatedEvent;
 import com.serhat.bank.kafka.Status;
 import com.serhat.bank.model.Account;
+import com.serhat.bank.model.Currency;
 import com.serhat.bank.repository.AccountRepository;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
@@ -249,8 +250,20 @@ public class AccountService {
     }
 
 
+    public List<AccountResponse> findAccountsByCurrencyForSpecialCustomer(Integer customerId, Currency currency) {
+        List<Account> accountResponses = repository.findAccountByCurrencyAndCustomerId(currency,customerId);
+        CustomerResponse customerResponse = customerClient.findCustomerById(customerId);
 
-
-
-
+        return accountResponses.stream()
+                .map(account -> new AccountResponse(
+                        account.getId(),
+                        account.getAccountNumber(),
+                        account.getAccountName(),
+                        account.getCurrency(),
+                        account.getAccountType(),
+                        account.getBalance(),
+                        customerResponse
+                ))
+                .toList();
+    }
 }
