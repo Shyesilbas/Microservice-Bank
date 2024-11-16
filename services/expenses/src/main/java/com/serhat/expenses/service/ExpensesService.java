@@ -5,6 +5,7 @@ import com.serhat.expenses.client.AccountClient;
 import com.serhat.expenses.client.CreditCardClient;
 import com.serhat.expenses.client.CustomerClient;
 import com.serhat.expenses.dto.*;
+import com.serhat.expenses.entity.Category;
 import com.serhat.expenses.entity.Expenses;
 import com.serhat.expenses.exception.CreditCardNotFoundException;
 import com.serhat.expenses.exception.CustomerNotFoundException;
@@ -120,6 +121,24 @@ public class ExpensesService {
                    .toList();
 
 
+    }
+
+
+    public List<PaymentResponse> processHistoryByCategory(String cardNumber,Category category){
+        CreditCardResponse creditCardResponse = creditCardClient.findCardByCardNumber(cardNumber);
+        if(creditCardResponse == null){
+            throw new CreditCardNotFoundException("Card Not Found : "+cardNumber);
+        }
+        return  repository.findExpensesByCardNumberAndCategory(cardNumber,category)
+                .stream()
+                .map(expenses -> new PaymentResponse(
+                        expenses.getCardNumber(),
+                        expenses.getCompanyName(),
+                        expenses.getProcessDate(),
+                        expenses.getAmount(),
+                        expenses.getCategory()
+                ))
+                .toList();
     }
 
 }

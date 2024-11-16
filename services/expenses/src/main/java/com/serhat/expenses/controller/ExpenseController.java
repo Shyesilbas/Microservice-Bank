@@ -3,6 +3,7 @@ package com.serhat.expenses.controller;
 import com.serhat.expenses.dto.PaymentResponse;
 import com.serhat.expenses.dto.ProcessRequest;
 import com.serhat.expenses.dto.ProcessResponse;
+import com.serhat.expenses.entity.Category;
 import com.serhat.expenses.service.ExpensesService;
 //import io.swagger.v3.oas.annotations.Operation;
 //import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -38,6 +39,11 @@ public class ExpenseController {
     @GetMapping("/history/byCardNumber/{cardNumber}")
     public List<PaymentResponse> paymentHistoryByCardNumber(@PathVariable  String cardNumber){
         return service.paymentHistoryByCardNumber(cardNumber);
+    }
+
+    @GetMapping("/history/byCategory/{cardNumber}/{category}")
+    public ResponseEntity<List<PaymentResponse>> paymentHistoryByCategory(@PathVariable String cardNumber , @PathVariable Category category){
+        return ResponseEntity.ok(service.processHistoryByCategory(cardNumber, category));
     }
 
 
