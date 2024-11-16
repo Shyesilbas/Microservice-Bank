@@ -13,13 +13,11 @@ import com.serhat.transactions.kafka.WithdrawalEvent;
 import com.serhat.transactions.notification.MailService;
 import com.serhat.transactions.repository.TransactionRepository;
 import feign.FeignException;
-import jakarta.ws.rs.ServiceUnavailableException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.ui.Model;
 import org.thymeleaf.context.Context;
 
 import java.math.BigDecimal;
@@ -89,20 +87,21 @@ public class TransactionService {
         try {
             AccountResponse response = accountClient.findByAccountNumber(request.accountNumber());
             CustomerResponse customer = customerClient.findCustomerById(Integer.valueOf(request.customerId()));
-            List<AccountResponse> accountResponse = customerClient.findAccountsByCustomerId(Integer.valueOf(request.customerId()));
 
             if (response == null) {
-                throw new AccountNotFoundException("Account Not found");
+                log.error("Account not found for account number: {}", request.accountNumber());
+                throw new AccountNotFoundException("Account not found for account number: " + request.accountNumber());
             }
             if (customer == null) {
-                throw new CustomerNotFoundException("Customer Not found");
-            }
-            if (accountResponse == null || accountResponse.isEmpty()) {
-                throw new CustomerHasNoAccountsException("Customer has no active accounts");
+                log.error("Customer not found for customer ID: {}", request.customerId());
+                throw new CustomerNotFoundException("Customer not found for customer ID: " + request.customerId());
             }
             if (!response.customer().id().equals(request.customerId())) {
-                throw new AccountAndCustomerIdMissmatchException("Account does not belong to the specified customer");
+                log.error("Account with number {} does not belong to customer with ID {}", request.accountNumber(), request.customerId());
+                throw new AccountAndCustomerIdMissmatchException("Account with number " + request.accountNumber() +
+                        " does not belong to customer with ID " + request.customerId());
             }
+
             Transaction transaction = Transaction.builder()
                     .senderCustomerId(null)
                     .receiverCustomerId(String.valueOf(response.id()))
@@ -121,12 +120,12 @@ public class TransactionService {
             accountClient.updateBalanceAfterDeposit(new DepositRequest(request.customerId(), request.accountNumber(), request.amount(), request.description()));
 
             repository.save(transaction);
-            log.info("Transaction Type : " + transaction.getTransactionType() + " State : " + transaction.getStatus());
-            log.info("Kafka Message sending for the Deposit ...");
+            log.info("Transaction Type: {} State: {}", transaction.getTransactionType(), transaction.getStatus());
+            log.info("Sending Kafka message for the Deposit...");
 
             DepositEvent depositEvent = new DepositEvent(transaction.getTransactionId(), transaction.getStatus());
             kafkaTemplateForDeposit.send("Deposit-transaction", depositEvent);
-            log.info("Kafka topic Sent successfully to topic Deposit-transaction");
+            log.info("Kafka topic sent successfully to topic Deposit-transaction");
 
             Currency currency = accountClient.findByAccountNumber(request.accountNumber()).currency();
 
@@ -137,24 +136,40 @@ public class TransactionService {
             context.setVariable("currency", currency);
             context.setVariable("updatedBalance", updatedBalance);
 
-            String emailSubject = "Withdrawal Successful";
+            String emailSubject = "Deposit Successful";
             mailService.sendEmail(customer.email(), emailSubject, "deposit-notification", context);
 
             return new DepositResponse(
                     request.accountNumber(), request.description(), request.amount(), customer.id(), updatedBalance
             );
 
-        } catch (AccountNotFoundException | CustomerNotFoundException | CustomerHasNoAccountsException | AccountAndCustomerIdMissmatchException e) {
-            log.error("Error occurred: {}", e.getMessage());
-            throw e;
         } catch (FeignException e) {
             log.error("Feign exception occurred: {}", e.getMessage());
-            throw new RuntimeException("Service communication error: " + e.getMessage(), e);
+            if (e.status() == 404) {
+                if (e.request().url().contains("customers")) {
+                    throw new CustomerNotFoundException("Customer not found with ID: " + request.customerId());
+                } else if (e.request().url().contains("accounts")) {
+                    throw new AccountNotFoundException("Account not found with number: " + request.accountNumber());
+                }
+                else if (e.status() == 500 && e.request().url().contains("customers/accounts")) {
+                    throw new CustomerHasNoAccountsException("Customer has no active accounts for customer ID: " + request.customerId());
+                }
+            }
+                log.error("Unexpected Feign exception: {}", e.getMessage());
+                throw new RuntimeException("Unexpected error occurred during the transaction", e);
+
+        } catch (AccountNotFoundException | CustomerNotFoundException |
+                 AccountAndCustomerIdMissmatchException e) {
+            log.error("Business logic error: {}", e.getMessage());
+            throw e;
         } catch (Exception e) {
             log.error("An unexpected error occurred: {}", e.getMessage());
             throw new RuntimeException("Unexpected error occurred: " + e.getMessage(), e);
         }
     }
+
+
+
 
     @Transactional
     public WithdrawResponse withdraw(WithdrawRequest request) {
@@ -181,7 +196,7 @@ public class TransactionService {
             }
 
             Transaction transaction = Transaction.builder()
-                    .senderCustomerId(String.valueOf(senderResponse.customer().id()))
+                    .senderCustomerId((senderResponse.customer().id()))
                     .receiverCustomerId(String.valueOf(receiverCustomer.id()))
                     .senderAccountNumber(String.valueOf(senderResponse.accountNumber()))
                     .receiverAccountNumber(null)
@@ -231,14 +246,27 @@ public class TransactionService {
                     updatedBalance
             );
 
-        } catch (FeignException.NotFound e) {
-          throw e;
-        } catch ( AccountAndCustomerIdMissmatchException |
-                 InsufficientBalanceException | IllegalAmountException e) {
-            log.error("Business logic error occurred: {}", e.getMessage(), e);
+        } catch (FeignException e) {
+            log.error("Feign exception occurred: {}", e.getMessage());
+            if (e.status() == 404) {
+                if (e.request().url().contains("customers")) {
+                    throw new CustomerNotFoundException("Customer not found with ID: " + request.receiverCustomerId());
+                } else if (e.request().url().contains("accounts")) {
+                    throw new AccountNotFoundException("Account not found with number: " + request.senderAccountNumber());
+                }
+                else if (e.status() == 500 && e.request().url().contains("customers/accounts")) {
+                    throw new CustomerHasNoAccountsException("Customer has no active accounts for customer ID: " + request.receiverCustomerId());
+                }
+            }
+            log.error("Unexpected Feign exception: {}", e.getMessage());
+            throw new RuntimeException("Unexpected error occurred during the transaction", e);
+
+        } catch (AccountNotFoundException | CustomerNotFoundException |
+                 AccountAndCustomerIdMissmatchException e) {
+            log.error("Business logic error: {}", e.getMessage());
             throw e;
         } catch (Exception e) {
-            log.error("An unexpected error occurred: {}", e.getMessage(), e);
+            log.error("An unexpected error occurred: {}", e.getMessage());
             throw new RuntimeException("Unexpected error occurred: " + e.getMessage(), e);
         }
 
@@ -248,7 +276,7 @@ public class TransactionService {
 @Transactional
     public TransferResponse transfer(TransferRequest request) {
         try {
-            // Retrieve customer and account information
+
             CustomerResponse receiverCustomer = customerClient.findCustomerById(Integer.valueOf(request.receiverId()));
             CustomerResponse senderCustomer = customerClient.findCustomerById(Integer.valueOf(request.senderId()));
             AccountResponse receiverAccount = accountClient.findByAccountNumber(request.receiverAccountNumber());
@@ -354,9 +382,27 @@ public class TransactionService {
                     receiverCustomer.name()
             );
 
-        } catch (FeignException e) {
+        }  catch (FeignException e) {
             log.error("Feign exception occurred: {}", e.getMessage());
-            throw new RuntimeException("Service communication error: " + e.getMessage(), e);
+            if (e.status() == 404) {
+                if (e.request().url().contains("customers")) {
+                        throw new CustomerNotFoundException("Check the Customer Id's");
+                } else if (e.request().url().contains("accounts")) {
+                    throw new AccountNotFoundException("Check the Account numbers");
+                }
+                else if (e.status() == 500 && e.request().url().contains("customers/accounts")) {
+                    throw new CustomerHasNoAccountsException("Customer has no active accounts ");
+                }else if(e.status() == 500 && e.request().url().contains("customers/accounts")){
+                    throw new CurrencyMismatchBetweenAccountsException("Currency Must be equal to do transfer!");
+                }
+            }
+            log.error("Unexpected Feign exception: {}", e.getMessage());
+            throw new RuntimeException("Unexpected error occurred during the transaction", e);
+
+        } catch (AccountNotFoundException | CustomerNotFoundException |
+                 AccountAndCustomerIdMissmatchException | CurrencyMismatchBetweenAccountsException e) {
+            log.error("Business logic error: {}", e.getMessage());
+            throw e;
         } catch (Exception e) {
             log.error("An unexpected error occurred: {}", e.getMessage());
             throw new RuntimeException("Unexpected error occurred: " + e.getMessage(), e);

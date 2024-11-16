@@ -5,7 +5,6 @@ import com.serhat.bank.dto.*;
 import com.serhat.bank.exception.AccountNotFoundException;
 import com.serhat.bank.exception.CustomerHasNoAccountsException;
 import com.serhat.bank.exception.CustomerNotFoundException;
-import com.serhat.bank.exception.InsufficientBalanceException;
 import com.serhat.bank.kafka.AccountCreatedEvent;
 import com.serhat.bank.kafka.Status;
 import com.serhat.bank.model.Account;
@@ -24,8 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
-import java.util.Random;
-import java.util.UUID;
+
 
 @Service
 @RequiredArgsConstructor
@@ -96,7 +94,7 @@ public class AccountService {
     }
 
     // For the AccountId
-    @Cacheable(value = "accounts", key = "'accounts::' + #id")
+    @Cacheable(value = "accounts", key = "#id")
     public AccountResponse findById(Integer id) {
         Cache cache = cacheManager.getCache("accounts");
         if (cache != null && cache.get(id) != null) {
@@ -114,16 +112,30 @@ public class AccountService {
         Account account = repository.findByAccountNumber(Integer.parseInt(request.accountNumber()))
                 .orElseThrow(() -> new AccountNotFoundException("Account not found"));
 
-        account.setBalance(account.getBalance().add(request.amount()));
+        BigDecimal currentBalance = account.getBalance() != null ? account.getBalance() : BigDecimal.ZERO;
+        account.setBalance(currentBalance.add(request.amount()));
         repository.save(account);
 
-        CustomerResponse customer = customerClient.findCustomerById(Integer.valueOf(request.customerId()));
+
+        CustomerResponse customer;
+        try {
+            customer = customerClient.findCustomerById(Integer.valueOf(request.customerId()));
+        } catch (FeignException e) {
+            throw new CustomerNotFoundException("Customer not found with ID: " + request.customerId());
+        }
+
+
         return new DepositResponse(account.getAccountNumber(), request.description(), request.amount(), customer);
     }
 
 
+
     // For the CustomerId
     public List<AccountResponse> findAccountByCustomerId(Integer customerId) {
+        CustomerResponse customerResponse = customerClient.findCustomerById(customerId);
+        if(customerResponse == null){
+            throw new CustomerNotFoundException("Customer Not found for id : "+customerId);
+        }
         try {
             List<Account> accounts = repository.findByCustomerId(customerId);
             if (accounts.isEmpty()) {
@@ -178,7 +190,7 @@ public class AccountService {
         Account account = repository.findByAccountNumber(Integer.parseInt(request.accountNumber()))
                 .orElseThrow(() -> new AccountNotFoundException("Account not found"));
 
-        BigDecimal debtLeft = request.amount();
+
         account.setBalance(account.getBalance().add(request.amount()));
         repository.save(account);
 

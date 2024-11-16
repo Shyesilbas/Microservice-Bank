@@ -70,7 +70,7 @@ public class CustomerController {
 //    @Operation(summary = "Fetch a Customer by ID")
 //    @ApiResponse(responseCode = "200", description = "Customer Fetched Successfully")
     @GetMapping("/{customerId}")
-    public ResponseEntity<CustomerResponse> getCustomerById(@PathVariable Integer customerId) {
+    public CustomerResponse getCustomerById(@PathVariable Integer customerId) {
         return service.findByCustomerId(customerId);
     }
 

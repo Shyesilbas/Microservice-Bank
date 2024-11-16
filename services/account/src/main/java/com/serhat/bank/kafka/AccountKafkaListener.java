@@ -23,7 +23,7 @@ public class AccountKafkaListener {
         log.info("Event received : " +event);
         CustomerResponse customer = customerClient.findCustomerById(event.customerId());
         if(customer != null){
-            customerClient.updateRelatedAccount(String.valueOf(customer.id()),event.accountNumber());
+            customerClient.updateRelatedAccount(Integer.valueOf(String.valueOf(customer.id())),event.accountNumber());
             log.info("Successfully Updated the related Accounts for customer.");
         }else{
             log.warn("Customer Id Not found!");
