@@ -28,8 +28,49 @@ springdoc:
       key-serializer: org.apache.kafka.common.serialization.StringSerializer
       value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
 
+management:
+  health:
+    circuitbreakers:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: circuitbreakers,health
+  endpoint:
+    health:
+      show-details: always
 
+resilience4j:
+  circuitbreaker:
+    instances:
+      accountServiceCircuitBreaker:
+        registerHealthIndicator: true
+        slidingWindowSize: 3          # Last 5 calls
+        failureRateThreshold: 50       # %30 of failure rate
+        waitDurationInOpenState: 6000  # stay open for 6 seconds
+        permittedNumberOfCallsInHalfOpenState: 1  # only 1 call can be done while half open state
+        minimumNumberOfCalls: 5
 
+      creditCardServiceCircuitBreaker:
+        registerHealthIndicator: true
+        slidingWindowSize: 3          # Last 5 calls
+        failureRateThreshold: 50       # %30 of failure rate
+        waitDurationInOpenState: 6000  # stay open for 6 seconds
+        permittedNumberOfCallsInHalfOpenState: 1  # only 1 call can be done while half open state
+        minimumNumberOfCalls: 5
 
+      loanServiceCircuitBreaker:
+        registerHealthIndicator: true
+        slidingWindowSize: 3          # Last 5 calls
+        failureRateThreshold: 50       # %30 of failure rate
+        waitDurationInOpenState: 6000  # stay open for 6 seconds
+        permittedNumberOfCallsInHalfOpenState: 1  # only 1 call can be done while half open state
+        minimumNumberOfCalls: 5
 
-
+      customerServiceCircuitBreaker:
+        registerHealthIndicator: true
+        slidingWindowSize: 3          # Last 5 calls
+        failureRateThreshold: 50       # %30 of failure rate
+        waitDurationInOpenState: 6000  # stay open for 6 seconds
+        permittedNumberOfCallsInHalfOpenState: 1  # only 1 call can be done while half open state
+        minimumNumberOfCalls: 5

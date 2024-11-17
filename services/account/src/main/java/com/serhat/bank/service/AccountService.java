@@ -36,6 +36,7 @@ public class AccountService {
     private final AccountMapper mapper;
     private final KafkaTemplate<String, AccountCreatedEvent> kafkaTemplate;
     private final CacheManager cacheManager;
+    private final TransactionClient transactionClient;
 
     public AccountResponse createAccount(AccountRequest request) {
         try {
@@ -275,4 +276,7 @@ public class AccountService {
                 ))
                 .toList();
     }
+
+
+
 }

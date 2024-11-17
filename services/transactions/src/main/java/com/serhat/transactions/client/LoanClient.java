@@ -12,6 +12,8 @@ public interface LoanClient {
 
 
   @GetMapping("/{loanId}")
+  @CircuitBreaker(name = "loanCircuitBreaker")
+
   LoanResponse findByLoanId(@PathVariable Integer loanId);
 
 

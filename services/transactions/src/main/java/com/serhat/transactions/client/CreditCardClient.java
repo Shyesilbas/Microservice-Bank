@@ -14,10 +14,12 @@ import java.math.BigDecimal;
 public interface CreditCardClient {
 
     @GetMapping("/{cardNumber}")
+    @CircuitBreaker(name = "creditCardCircuitBreaker")
     CreditCardResponse findCardByCardNumber(@PathVariable String cardNumber);
 
 
     @PutMapping ("/updateDebtAndBalance/{cardNumber}")
+    @CircuitBreaker(name = "creditCardCircuitBreaker")
     void updateDebtAndBalanceAfterProcess(
             @PathVariable String cardNumber,
             @RequestParam BigDecimal updatedDebt,

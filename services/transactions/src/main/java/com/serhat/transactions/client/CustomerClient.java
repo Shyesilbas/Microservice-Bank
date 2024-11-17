@@ -12,9 +12,11 @@ import java.util.List;
 public interface CustomerClient {
 
     @GetMapping("/{customerId}")
+    @CircuitBreaker(name = "customerCircuitBreaker")
     CustomerResponse findCustomerById(@PathVariable Integer customerId);
 
     @GetMapping("/accounts/{customerId}")
+    @CircuitBreaker(name = "customerCircuitBreaker")
     List<AccountResponse> findAccountsByCustomerId(@PathVariable Integer customerId);
 
 }

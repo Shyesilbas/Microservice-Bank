@@ -15,9 +15,11 @@ import com.serhat.transactions.repository.TransactionRepository;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 import org.thymeleaf.context.Context;
 
 import java.math.BigDecimal;
@@ -66,20 +68,40 @@ public class TransactionService {
     }
 
     public List<TransactionHistory> transactionHistories(String accountNumber){
-       return repository.findAllTransactions(accountNumber)
-                .stream()
-                .map(transaction -> new TransactionHistory(
-                        transaction.getTransactionDate(),
-                        transaction.getSenderCustomerId(),
-                        transaction.getReceiverCustomerId(),
-                        transaction.getSenderAccountNumber(),
-                        transaction.getReceiverAccountNumber(),
-                        transaction.getAmount(),
-                        transaction.getDescription(),
-                        transaction.getTransactionType()
-                ))
-                .toList();
+        try {
+            AccountResponse accountResponse = accountClient.findByAccountNumber(accountNumber);
+
+            if(accountResponse == null) {
+                throw new AccountNotFoundException("Account not found with account number: " + accountNumber);
+            }
+
+            return repository.findAllTransactions(accountNumber)
+                    .stream()
+                    .map(transaction -> new TransactionHistory(
+                            transaction.getTransactionDate(),
+                            transaction.getSenderCustomerId(),
+                            transaction.getReceiverCustomerId(),
+                            transaction.getSenderAccountNumber(),
+                            transaction.getReceiverAccountNumber(),
+                            transaction.getAmount(),
+                            transaction.getDescription(),
+                            transaction.getTransactionType()
+                    ))
+                    .toList();
+        } catch (FeignException.NotFound e) {
+            throw new AccountNotFoundException("Account not found with account number: " + accountNumber);
+        } catch (FeignException e) {
+            if (e.status() == HttpStatus.SERVICE_UNAVAILABLE.value()) {
+                throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE,
+                        "Account service is temporarily unavailable. Please try again later.");
+            }
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
+                    "An unexpected error occurred while communicating with the account service.");
+        }
     }
+
+
+
 
 
     @Transactional
